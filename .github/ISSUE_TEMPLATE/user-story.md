@@ -1,0 +1,26 @@
+---
+name: User Story
+about: This is a User Story Template.
+title: ''
+labels: tue-team-2
+assignees: ''
+
+---
+
+# User Story / Task
+
+**Title:** [Short description]
+
+**As a** [role]  
+**I want** [feature]  
+**So that** [benefit]
+
+**Acceptance Criteria:**  
+- [ ] Criterion 1  
+- [ ] Criterion 2  
+
+**Priority:** High / Medium / Low  
+
+**Estimated Story Points:** [optional]
+
+**Notes / Comments:**

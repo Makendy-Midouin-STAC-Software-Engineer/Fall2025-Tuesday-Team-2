@@ -1,5 +1,5 @@
 ---
-name: User Story
+name: User Story Template
 about: This is a user story template.
 title: ''
 labels: tue-team-2

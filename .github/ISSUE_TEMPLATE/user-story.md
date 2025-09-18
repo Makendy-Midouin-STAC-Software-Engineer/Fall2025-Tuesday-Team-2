@@ -7,20 +7,26 @@ assignees: ''
 
 ---
 
-# User Story / Task
+# User Story
 
 **Title:** [Short description]
 
-**As a** [role]  
-**I want** [feature]  
-**So that** [benefit]
+**As a** [specific user type] 
+**I want** [specific functionality] 
+**So that**[clear business value/benefit]
 
 **Acceptance Criteria:**  
-- [ ] Criterion 1  
+- [ ] Criterion 1
+  **Given** [initial context/state]
+  **When** [user action or trigger]
+  **Then** [expected outcome]
+  **And** [additional expected outcomes]
 - [ ] Criterion 2  
+  [Include multiple scenarios for different cases: success, failure, edge cases]
 
 **Priority:** High / Medium / Low  
 
-**Estimated Story Points:** [optional]
+## Story Points
+[Estimate using ZenHub story points: 1, 2, 3, 5, 8]
 
 **Notes / Comments:**

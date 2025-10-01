@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.shortcuts import render, redirect
 from .forms import CustomUserCreationForm
 
@@ -8,8 +9,9 @@ def signup_view(request):
     if request.method == "POST":
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            form.save() # create the user
-            return redirect('registration_complete')  # redirect to confirmation page
+            form.save()
+            messages.success(request, "You have registered successfully! Please log in.")
+            return redirect('login')  # Redirect to your login page
     else:
         form = CustomUserCreationForm()
     return render(request, "accounts/signup.html", {"form": form})

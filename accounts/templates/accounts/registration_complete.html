@@ -5,10 +5,6 @@
 </head>
 <body>
     <h2>Registration Successful!</h2>
-    <p>You have registered for an account. Please log in to continue.</p>
-
-    <a href="{% url 'login' %}">
-        <button>Go to Login</button>
-    </a>
+    <p><a href="{% url 'accounts:home' %}">Go to Home</a></p>
 </body>
 </html>

@@ -1,32 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Login</title>
 </head>
 <body>
-    <h1>Login</h1>
+    <h2>Login to Your Account</h2>
 
-    <!-- Display messages -->
-    {% if messages %}
-        <ul>
-            {% for message in messages %}
-                <li style="color: green;">{{ message }}</li>
-            {% endfor %}
-        </ul>
+    <!-- Display login errors -->
+    {% if form.errors %}
+        <div style="color: red;">
+            <p>Your username and password didn’t match. Please try again.</p>
+        </div>
     {% endif %}
 
-    <!-- Simple login form -->
+    <!-- Login form -->
     <form method="post">
         {% csrf_token %}
-        <label for="username">Username:</label>
-        <input type="text" name="username" id="username" required><br><br>
-
-        <label for="password">Password:</label>
-        <input type="password" name="password" id="password" required><br><br>
-
-        <button type="submit">Log In</button>
+        {{ form.as_p }}
+        <button type="submit">Login</button>
     </form>
 
+    <p>Don’t have an account? <a href="{% url 'signup' %}">Sign up here</a>.</p>
 </body>
 </html>

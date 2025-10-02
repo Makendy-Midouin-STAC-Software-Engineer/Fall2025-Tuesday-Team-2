@@ -4,7 +4,11 @@
     <title>Registration Complete</title>
 </head>
 <body>
-    <h2>You have registered for an account. Please log in.</h2>
-    <a href="{% url 'login' %}"><button>Log In</button></a>
+    <h2>Registration Successful!</h2>
+    <p>You have registered for an account. Please log in to continue.</p>
+
+    <a href="{% url 'login' %}">
+        <button>Go to Login</button>
+    </a>
 </body>
 </html>

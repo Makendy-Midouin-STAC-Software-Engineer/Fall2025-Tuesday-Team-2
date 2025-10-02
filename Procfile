@@ -1,1 +1,1 @@
-web: gunicorn studybuddy.wsgi --bind :8000
+web: gunicorn studybuddy.wsgi:application 

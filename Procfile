@@ -1,1 +1,1 @@
-web: gunicorn studybuddy.wsgi:application 
+web: gunicorn studybuddy.wsgi:application --workers 1 --timeout 120

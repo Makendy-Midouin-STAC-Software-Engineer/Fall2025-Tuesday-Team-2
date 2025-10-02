@@ -4,8 +4,12 @@
     <title>Dummy Login</title>
 </head>
 <body>
-    <h2>This is a placeholder login page.</h2>
-    <p>Login functionality will be implemented later.</p>
-    <a href="{% url 'accounts:home' %}">Back to Home</a>
+    <h2>Dummy Login</h2>
+    <form method="post">
+        {% csrf_token %}
+        <label>Username:</label>
+        <input type="text" name="username" placeholder="Enter any name" required>
+        <button type="submit">Login</button>
+    </form>
 </body>
 </html>

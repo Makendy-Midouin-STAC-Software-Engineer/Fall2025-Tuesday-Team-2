@@ -1,11 +1,15 @@
 from django.db.models import F
 from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.views import generic
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
 
 from .models import Choice, Question
 
+
+# ---------- Main Poll Views ----------
 class IndexView(generic.ListView):
     template_name = "polls/index.html"
     context_object_name = "latest_question_list"
@@ -14,13 +18,17 @@ class IndexView(generic.ListView):
         """Return the last five published questions."""
         return Question.objects.order_by("-pub_date")[:5]
 
+
 class DetailView(generic.DetailView):
     model = Question
     template_name = "polls/detail.html"
 
+
 class ResultsView(generic.DetailView):
     model = Question
     template_name = "polls/results.html"
+
+
 def vote(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
     try:
@@ -38,7 +46,28 @@ def vote(request, question_id):
     else:
         selected_choice.votes = F("votes") + 1
         selected_choice.save()
-        # Always return an HttpResponseRedirect after successfully dealing
-        # with POST data. This prevents data from being posted twice if a
-        # user hits the Back button.
+        # Always return an HttpResponseRedirect after successfully dealing with POST data.
         return HttpResponseRedirect(reverse("polls:results", args=(question.id,)))
+
+
+# ---------- Authentication Views ----------
+def custom_login(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            return redirect('polls:index')  # Redirect to home after login
+        else:
+            messages.error(request, 'Invalid username or password')
+
+    return render(request, 'polls/login.html')
+
+
+def custom_logout(request):
+    logout(request)
+    return render(request, 'polls/logout.html')
+

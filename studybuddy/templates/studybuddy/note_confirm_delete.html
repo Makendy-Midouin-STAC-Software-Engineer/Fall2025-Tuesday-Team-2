@@ -1,0 +1,10 @@
+{% extends 'studybuddy/base.html' %}
+{% block content %}
+<h2>Delete Note</h2>
+<p>Are you sure you want to delete "{{ object.title }}"?</p>
+<form method="post">
+  {% csrf_token %}
+  <button type="submit">Yes, delete</button>
+</form>
+<a href="{% url 'studybuddy:note_list' %}">Cancel</a>
+{% endblock %}

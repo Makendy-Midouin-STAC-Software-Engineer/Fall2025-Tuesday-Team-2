@@ -4,8 +4,12 @@
     <title>Home</title>
 </head>
 <body>
-    <h2>Welcome, {{ request.user.username }}!</h2>
-    <p>You are logged in.</p>
-    <a href="{% url 'studybuddy:logout' %}">Logout</a>
+    <h2>Welcome to Study Buddy!</h2>
+    {% if logged_in %}
+        <p>Hello, {{ username }}! You are logged in.</p>
+        <p><a href="{% url 'accounts:logout' %}">Logout</a></p>
+    {% else %}
+        <p><a href="{% url 'accounts:signup' %}">Sign Up</a> | <a href="{% url 'accounts:login' %}">Login</a></p>
+    {% endif %}
 </body>
 </html>

@@ -1,0 +1,22 @@
+{% extends "studybuddy/base.html" %}
+
+{% block content %}
+<h1>Your Notes</h1>
+
+<a href="{% url 'studybuddy:note_add' %}" class="btn btn-primary">+ Create New Note</a>
+
+<ul>
+  {% for note in notes %}
+    <li>
+      <strong>{{ note.title }}</strong> ({{ note.updated_at|date:"M d, Y H:i" }})
+      <br>
+      {{ note.content|truncatechars:100 }}
+      <br>
+      <a href="{% url 'studybuddy:note_edit' note.pk %}">Edit</a> |
+      <a href="{% url 'studybuddy:note_delete' note.pk %}">Delete</a>
+    </li>
+  {% empty %}
+    <p>No notes yet.</p>
+  {% endfor %}
+</ul>
+{% endblock %}

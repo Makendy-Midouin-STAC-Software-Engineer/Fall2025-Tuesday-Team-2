@@ -1,0 +1,29 @@
+{% extends 'studybuddy/base.html' %}
+{% block title %}{{ room.name }}{% endblock %}
+{% block content %}
+<h2 style="margin-top:0;">{{ room.name }}</h2>
+
+<div style="border:1px solid #ddd;padding:15px;border-radius:8px;height:400px;overflow-y:auto;margin-bottom:15px;">
+    {% for message in messages %}
+        <div style="margin-bottom:15px;padding:10px 15px;border-radius:10px;max-width:70%;word-wrap:break-word;
+            {% if message.user == request.user %}background-color:#2563eb;color:white;margin-left:auto;{% else %}background-color:#e5e7eb;color:#111;{% endif %}">
+            <strong>{{ message.user.username }}</strong><br>
+            {{ message.content }}
+            <div style="font-size:0.8em;color:#555;margin-top:4px;">{{ message.timestamp|date:"M d, Y H:i" }}</div>
+        </div>
+    {% empty %}
+        <p>No messages yet. Start the conversation!</p>
+    {% endfor %}
+</div>
+
+<form method="POST" style="display:flex;align-items:center;">
+    {% csrf_token %}
+    <textarea name="content" rows="2" placeholder="Type your message..." required
+              style="flex:1;resize:none;padding:10px;border-radius:8px;border:1px solid #ccc;font-family:inherit;"></textarea>
+    <button type="submit"
+            style="background-color:#2563eb;border:none;color:white;padding:10px 20px;border-radius:8px;margin-left:10px;cursor:pointer;">
+        Send
+    </button>
+</form>
+{% endblock %}
+

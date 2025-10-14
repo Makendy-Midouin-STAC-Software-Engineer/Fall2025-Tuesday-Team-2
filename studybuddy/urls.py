@@ -1,11 +1,16 @@
 from django.urls import path
 from . import views
 
+# Required for namespacing
 app_name = 'studybuddy'
 
 urlpatterns = [
-    path('register/', views.custom_register, name='register'),
-    path('', views.home, name='home'),            # Home page after login
-    path('login/', views.custom_login, name='login'),
-    path('logout/', views.custom_logout, name='logout'),
+    path("", views.home_view, name='home'),            # Home page
+    path("register/", views.custom_register, name='register'),
+    path("login/", views.custom_login, name='login'),
+    path("logout/", views.custom_logout, name='logout'),
+    path("notes/", views.NoteListView.as_view(), name='note_list'),
+    path("notes/add/", views.NoteCreateView.as_view(), name='note_add'),
+    path("notes/<int:pk>/edit/", views.NoteUpdateView.as_view(), name='note_edit'),
+    path("notes/<int:pk>/delete/", views.NoteDeleteView.as_view(), name='note_delete'),
 ]

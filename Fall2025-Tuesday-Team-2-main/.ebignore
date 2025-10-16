@@ -1,6 +1,0 @@
-.eb-virt
-.env
-.venv
-env/
-venv/
-eb-virt/

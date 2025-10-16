@@ -2,12 +2,57 @@
 <html>
 <head>
     <title>Home</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .feature-card {
+            background-color: #f3f4f6;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+        }
+        a {
+            display: inline-block;
+            background-color: #2563eb;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 5px;
+        }
+        a:hover {
+            background-color: #1d4ed8;
+        }
+        .logout-btn {
+            background-color: #dc2626;
+        }
+        .logout-btn:hover {
+            background-color: #b91c1c;
+        }
+    </style>
 </head>
 <body>
-    <h2>Welcome, {{ username }}!</h2>
-    <p>You are logged in.</p>
+    <h1>Welcome, {{ username }}!</h1>
+    <p>Choose a feature to get started:</p>
 
-    <a href="{% url 'studybuddy:note_list' %}">Go to Notes</a>
-    <a href="{% url 'studybuddy:logout' %}">Logout</a>
+    <div class="feature-card">
+        <h3>📝 Notes</h3>
+        <p>Create, edit, and manage your study notes.</p>
+        <a href="{% url 'studybuddy:note_list' %}">Go to Notes</a>
+    </div>
+
+    <div class="feature-card">
+        <h3>💬 Study Rooms</h3>
+        <p>Join or create study rooms to chat with other students.</p>
+        <a href="{% url 'studybuddy:rooms' %}">Go to Rooms</a>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="{% url 'studybuddy:logout' %}" class="logout-btn">Logout</a>
+    </div>
 </body>
 </html>

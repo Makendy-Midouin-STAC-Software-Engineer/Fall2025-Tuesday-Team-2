@@ -3,11 +3,11 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
-from .models import Note
+from .models import Note, Room, Message
 
 
 # -----------------------------
@@ -95,3 +95,35 @@ class NoteDeleteView(LoginRequiredMixin, DeleteView):
     model = Note
     template_name = 'studybuddy/note_confirm_delete.html'
     success_url = reverse_lazy('studybuddy:note_list')
+
+
+# -----------------------------
+# ROOMS & MESSAGES FEATURE
+# -----------------------------
+
+@login_required
+def rooms(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        description = request.POST.get('description')
+        if name:
+            Room.objects.create(name=name, description=description, created_by=request.user)
+        return redirect('studybuddy:rooms')
+
+    all_rooms = Room.objects.all().order_by('-created_at')
+    return render(request, 'studybuddy/rooms.html', {'rooms': all_rooms})
+
+
+@login_required
+def room_detail(request, room_id):
+    room = get_object_or_404(Room, id=room_id)
+    room_messages = room.messages.order_by('timestamp')
+
+    if request.method == 'POST':
+        content = request.POST.get('content')
+        if content:
+            Message.objects.create(room=room, user=request.user, content=content)
+        return redirect('studybuddy:room_detail', room_id=room.id)
+
+    context = {'room': room, 'messages': room_messages}
+    return render(request, 'studybuddy/room_detail.html', context)

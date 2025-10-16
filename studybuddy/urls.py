@@ -9,8 +9,14 @@ urlpatterns = [
     path("register/", views.custom_register, name='register'),
     path("login/", views.custom_login, name='login'),
     path("logout/", views.custom_logout, name='logout'),
+    
+    # Notes URLs
     path("notes/", views.NoteListView.as_view(), name='note_list'),
     path("notes/add/", views.NoteCreateView.as_view(), name='note_add'),
     path("notes/<int:pk>/edit/", views.NoteUpdateView.as_view(), name='note_edit'),
     path("notes/<int:pk>/delete/", views.NoteDeleteView.as_view(), name='note_delete'),
+    
+    # Rooms URLs
+    path("rooms/", views.rooms, name='rooms'),
+    path("room/<int:room_id>/", views.room_detail, name='room_detail'),
 ]

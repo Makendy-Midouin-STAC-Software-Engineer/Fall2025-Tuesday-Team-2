@@ -28,6 +28,7 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = [
     'django-env.eba-3hna7m4m.us-east-1.elasticbeanstalk.com',
+    'studybuddy-envi.eba-jbr4wy32.us-east-1.elasticbeanstalk.com '
     '.elasticbeanstalk.com',  # Allow any EB environment
     'localhost',
     '127.0.0.1',

@@ -32,6 +32,7 @@ ALLOWED_HOSTS = [
     '.elasticbeanstalk.com',  # Allow any EB environment
     'localhost',
     '127.0.0.1',
+    '172.31.21.188',
 ]
 
 

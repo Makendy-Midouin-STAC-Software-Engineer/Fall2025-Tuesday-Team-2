@@ -1,30 +1,250 @@
 {% extends 'studybuddy/base.html' %}
 {% block title %}{{ room.name }}{% endblock %}
 {% block content %}
-<h2 style="margin-top:0;">{{ room.name }}</h2>
-
-<div style="border:1px solid #ddd;padding:15px;border-radius:8px;height:400px;overflow-y:auto;margin-bottom:15px;">
-    {% for message in messages %}
-        <div style="margin-bottom:15px;padding:10px 15px;border-radius:10px;max-width:70%;word-wrap:break-word;
-            {% if message.user == request.user %}background-color:#2563eb;color:white;margin-left:auto;{% else %}background-color:#e5e7eb;color:#111;{% endif %}">
-            <strong>{{ message.user.username }}</strong><br>
-            {{ message.content }}
-            <div style="font-size:0.8em;color:#555;margin-top:4px;">{{ message.timestamp|date:"M d, Y H:i" }}</div>
-        </div>
-    {% empty %}
-        <p>No messages yet. Start the conversation!</p>
-    {% endfor %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+    <h2 style="margin:0;">{{ room.name }}</h2>
+    {% if room.created_by == request.user %}
+    <a href="{% url 'studybuddy:room_delete' room.id %}" 
+       style="background-color:#dc2626;color:white;padding:8px 16px;border-radius:8px;text-decoration:none;font-size:14px;">
+        Delete Room
+    </a>
+    {% endif %}
 </div>
 
-<form method="POST" style="display:flex;align-items:center;">
-    {% csrf_token %}
-    <textarea name="content" rows="2" placeholder="Type your message..." required
-              style="flex:1;resize:none;padding:10px;border-radius:8px;border:1px solid #ccc;font-family:inherit;"></textarea>
-    <button type="submit"
-            style="background-color:#2563eb;border:none;color:white;padding:10px 20px;border-radius:8px;margin-left:10px;cursor:pointer;">
-        Send
-    </button>
-</form>
+<div style="display:flex;gap:20px;">
+    <!-- Chat Section -->
+    <div style="flex:2;">
+        <div style="border:1px solid #ddd;padding:15px;border-radius:8px;height:400px;overflow-y:auto;margin-bottom:15px;">
+            {% for message in messages %}
+                <div style="margin-bottom:15px;padding:10px 15px;border-radius:10px;max-width:70%;word-wrap:break-word;position:relative;
+                    {% if message.user == request.user %}background-color:#2563eb;color:white;margin-left:auto;{% else %}background-color:#e5e7eb;color:#111;{% endif %}">
+                    <div style="display:flex;justify-content:space-between;align-items:start;">
+                        <div style="flex:1;">
+                            <strong>{{ message.user.username }}</strong><br>
+                            {{ message.content }}
+                            <div style="font-size:0.8em;{% if message.user == request.user %}color:#e0e0e0;{% else %}color:#555;{% endif %}margin-top:4px;">
+                                {{ message.timestamp|date:"M d, Y H:i" }}
+                            </div>
+                        </div>
+                        {% if message.user == request.user %}
+                        <form method="POST" action="{% url 'studybuddy:message_delete' message.id %}" style="margin-left:10px;" onsubmit="return confirm('Delete this message?');">
+                            {% csrf_token %}
+                            <button type="submit" 
+                                    style="background-color:transparent;border:none;color:{% if message.user == request.user %}white{% else %}#666{% endif %};cursor:pointer;font-size:18px;padding:0;line-height:1;"
+                                    title="Delete message">
+                                ×
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <p>No messages yet. Start the conversation!</p>
+            {% endfor %}
+        </div>
+
+        <form method="POST" style="display:flex;align-items:center;">
+            {% csrf_token %}
+            <textarea name="content" rows="2" placeholder="Type your message..." required
+                      style="flex:1;resize:none;padding:10px;border-radius:8px;border:1px solid #ccc;font-family:inherit;"></textarea>
+            <button type="submit"
+                    style="background-color:#2563eb;border:none;color:white;padding:10px 20px;border-radius:8px;margin-left:10px;cursor:pointer;">
+                Send
+            </button>
+        </form>
+    </div>
+
+    <!-- Pomodoro Timer Section -->
+    <div style="flex:1;min-width:250px;">
+        <div style="border:1px solid #ddd;padding:20px;border-radius:8px;background-color:#f8f9fa;">
+            <h3 style="margin-top:0;text-align:center;color:#333;">Pomodoro Timer</h3>
+            
+            <div id="timer-display" style="font-size:48px;font-weight:bold;text-align:center;margin:20px 0;color:#2563eb;">
+                25:00
+            </div>
+            
+            <div style="text-align:center;margin-bottom:15px;">
+                <span id="timer-mode" style="font-size:16px;color:#666;">Work Session</span>
+            </div>
+            
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <button id="start-btn" onclick="startTimer()" 
+                        style="background-color:#16a34a;color:white;padding:12px;border:none;border-radius:8px;cursor:pointer;font-size:16px;">
+                    Start
+                </button>
+                <button id="pause-btn" onclick="pauseTimer()" 
+                        style="background-color:#f59e0b;color:white;padding:12px;border:none;border-radius:8px;cursor:pointer;font-size:16px;display:none;">
+                    Pause
+                </button>
+                <button onclick="resetTimer()" 
+                        style="background-color:#6b7280;color:white;padding:12px;border:none;border-radius:8px;cursor:pointer;font-size:16px;">
+                    Reset
+                </button>
+            </div>
+            
+            <div style="margin-top:15px;padding:10px;background-color:#e5e7eb;border-radius:8px;font-size:14px;">
+                <strong>Settings:</strong><br>
+                Work: <span id="work-time">25</span> min<br>
+                Break: <span id="break-time">5</span> min
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let timerInterval = null;
+let timeLeft = 25 * 60; // 25 minutes in seconds
+let isWorkSession = true;
+let isRunning = false;
+
+const WORK_TIME = 25 * 60;
+const BREAK_TIME = 5 * 60;
+const STORAGE_KEY = 'pomodoro_timer_state_room_{{ room.id }}';
+
+// Load timer state from localStorage
+function loadTimerState() {
+    const savedState = localStorage.getItem(STORAGE_KEY);
+    if (savedState) {
+        try {
+            const state = JSON.parse(savedState);
+            timeLeft = state.timeLeft;
+            isWorkSession = state.isWorkSession;
+            isRunning = state.isRunning;
+            
+            // Calculate elapsed time since last save
+            const now = Date.now();
+            const elapsed = Math.floor((now - state.timestamp) / 1000);
+            
+            // If timer was running, update timeLeft based on elapsed time
+            if (isRunning && elapsed > 0) {
+                timeLeft = Math.max(0, timeLeft - elapsed);
+            }
+            
+            updateDisplay();
+            updateModeDisplay();
+            
+            // Resume timer if it was running
+            if (isRunning && timeLeft > 0) {
+                resumeTimer();
+            } else if (isRunning && timeLeft <= 0) {
+                // Timer finished while away
+                handleTimerComplete();
+            }
+        } catch (e) {
+            console.log('Error loading timer state:', e);
+        }
+    }
+}
+
+// Save timer state to localStorage
+function saveTimerState() {
+    const state = {
+        timeLeft: timeLeft,
+        isWorkSession: isWorkSession,
+        isRunning: isRunning,
+        timestamp: Date.now()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function updateDisplay() {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    document.getElementById('timer-display').textContent = 
+        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function updateModeDisplay() {
+    document.getElementById('timer-mode').textContent = 
+        isWorkSession ? 'Work Session' : 'Break Time';
+    document.getElementById('timer-display').style.color = 
+        isWorkSession ? '#2563eb' : '#16a34a';
+}
+
+function resumeTimer() {
+    isRunning = true;
+    document.getElementById('start-btn').style.display = 'none';
+    document.getElementById('pause-btn').style.display = 'block';
+    
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        updateDisplay();
+        saveTimerState();
+        
+        if (timeLeft <= 0) {
+            handleTimerComplete();
+        }
+    }, 1000);
+}
+
+function startTimer() {
+    if (!isRunning) {
+        resumeTimer();
+    }
+}
+
+function handleTimerComplete() {
+    pauseTimer();
+    playNotificationSound();
+    
+    // Switch mode
+    isWorkSession = !isWorkSession;
+    timeLeft = isWorkSession ? WORK_TIME : BREAK_TIME;
+    updateModeDisplay();
+    updateDisplay();
+    saveTimerState();
+    
+    alert(isWorkSession ? 'Break finished! Time to work!' : 'Work session finished! Take a break!');
+}
+
+function pauseTimer() {
+    isRunning = false;
+    clearInterval(timerInterval);
+    document.getElementById('start-btn').style.display = 'block';
+    document.getElementById('pause-btn').style.display = 'none';
+    saveTimerState();
+}
+
+function resetTimer() {
+    pauseTimer();
+    isWorkSession = true;
+    timeLeft = WORK_TIME;
+    updateModeDisplay();
+    updateDisplay();
+    saveTimerState();
+}
+
+function playNotificationSound() {
+    // Create a simple beep sound using Web Audio API
+    try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (e) {
+        console.log('Audio notification not supported');
+    }
+}
+
+// Load state when page loads
+window.addEventListener('DOMContentLoaded', () => {
+    loadTimerState();
+});
+
+// Save state before page unloads
+window.addEventListener('beforeunload', () => {
+    saveTimerState();
+});
+</script>
 {% endblock %}
-
-

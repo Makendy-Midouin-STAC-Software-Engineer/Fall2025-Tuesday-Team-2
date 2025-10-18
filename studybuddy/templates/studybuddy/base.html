@@ -41,6 +41,19 @@
     </nav>
 
     <div class="content">
+        {% if messages %}
+        <div style="margin-bottom:15px;">
+            {% for message in messages %}
+            <div style="padding:12px 15px;margin-bottom:10px;border-radius:8px;
+                {% if message.tags == 'success' %}background-color:#d1fae5;color:#065f46;border:1px solid #10b981;
+                {% elif message.tags == 'error' %}background-color:#fee2e2;color:#991b1b;border:1px solid #ef4444;
+                {% else %}background-color:#e0e7ff;color:#3730a3;border:1px solid #6366f1;{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
         {% block content %}
         {% endblock %}
     </div>

@@ -6,8 +6,15 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.core.mail import send_mail
+from django.contrib.sites.shortcuts import get_current_site
+from django.template.loader import render_to_string
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth.tokens import default_token_generator
+import uuid
 
-from .models import Note, Room, Message
+from .models import Note, Room, Message, UserProfile
 
 
 # -----------------------------
@@ -20,6 +27,16 @@ def custom_login(request):
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
         if user is not None:
+            # Check if email is verified
+            try:
+                if not user.profile.email_verified:
+                    messages.warning(request, 
+                        'Please verify your email before logging in. Check your inbox for the verification link.')
+                    return render(request, 'studybuddy/login.html')
+            except UserProfile.DoesNotExist:
+                # Old users without profile - create one
+                UserProfile.objects.create(user=user, email_verified=True)
+            
             login(request, user)
             return redirect('studybuddy:note_list')  # redirect to notes list after login
         else:
@@ -35,18 +52,174 @@ def custom_logout(request):
 def custom_register(request):
     if request.method == 'POST':
         username = request.POST.get('username')
+        email = request.POST.get('email')
         password = request.POST.get('password')
         password2 = request.POST.get('password2')
 
+        # Validation
         if password != password2:
             messages.error(request, "Passwords do not match.")
+        elif not email:
+            messages.error(request, "Email is required.")
         elif User.objects.filter(username=username).exists():
             messages.error(request, "Username already exists.")
+        elif User.objects.filter(email=email).exists():
+            messages.error(request, "An account with this email already exists.")
         else:
-            user = User.objects.create_user(username=username, password=password)
-            login(request, user)
-            return redirect('studybuddy:note_list')  # redirect to notes list after registration
+            # Create user (but don't log them in yet - email must be verified)
+            user = User.objects.create_user(username=username, email=email, password=password)
+            user.is_active = True  # Keep active but track verification separately
+            user.save()
+            
+            # Create user profile
+            profile = UserProfile.objects.create(user=user)
+            
+            # Send verification email
+            send_verification_email(request, user, profile)
+            
+            messages.success(request, 
+                f"Account created! Please check your email ({email}) to verify your account. "
+                "For development, the email will be shown in the terminal.")
+            return redirect('studybuddy:login')
+            
     return render(request, 'studybuddy/register.html')
+
+
+def send_verification_email(request, user, profile):
+    """Send email verification link to user"""
+    verification_link = request.build_absolute_uri(
+        f'/studybuddy/verify-email/{profile.verification_token}/'
+    )
+    
+    subject = 'Verify your StudyBuddy account'
+    message = f"""
+Hi {user.username},
+
+Thank you for registering with StudyBuddy!
+
+Please click the link below to verify your email address:
+{verification_link}
+
+This link will expire in 24 hours.
+
+If you didn't create this account, please ignore this email.
+
+Best regards,
+The StudyBuddy Team
+    """
+    
+    send_mail(
+        subject,
+        message,
+        'noreply@studybuddy.com',
+        [user.email],
+        fail_silently=False,
+    )
+
+
+def verify_email(request, token):
+    """Verify user's email with token"""
+    try:
+        profile = UserProfile.objects.get(verification_token=token)
+        
+        if profile.email_verified:
+            messages.info(request, "Your email is already verified. You can login now.")
+        elif profile.is_token_valid():
+            profile.email_verified = True
+            profile.save()
+            messages.success(request, "Email verified successfully! You can now login.")
+        else:
+            messages.error(request, "This verification link has expired. Please contact support.")
+            
+    except UserProfile.DoesNotExist:
+        messages.error(request, "Invalid verification link.")
+    
+    return redirect('studybuddy:login')
+
+
+def password_reset_request(request):
+    """Handle password reset request"""
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        
+        try:
+            user = User.objects.get(email=email)
+            
+            # Generate reset token
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            
+            # Build reset link
+            reset_link = request.build_absolute_uri(
+                f'/studybuddy/reset-password/{uid}/{token}/'
+            )
+            
+            # Send email
+            subject = 'Password Reset Request - StudyBuddy'
+            message = f"""
+Hi {user.username},
+
+You requested to reset your password for your StudyBuddy account.
+
+Click the link below to reset your password:
+{reset_link}
+
+This link will expire in 1 hour.
+
+If you didn't request this, please ignore this email.
+
+Best regards,
+The StudyBuddy Team
+            """
+            
+            send_mail(
+                subject,
+                message,
+                'noreply@studybuddy.com',
+                [user.email],
+                fail_silently=False,
+            )
+            
+            messages.success(request, 
+                f"Password reset instructions have been sent to {email}. "
+                "For development, check the terminal for the email.")
+        except User.DoesNotExist:
+            # Don't reveal that the email doesn't exist (security)
+            messages.success(request, 
+                "If an account exists with that email, password reset instructions have been sent.")
+        
+        return redirect('studybuddy:login')
+    
+    return render(request, 'studybuddy/password_reset.html')
+
+
+def password_reset_confirm(request, uidb64, token):
+    """Handle password reset confirmation"""
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+    
+    if user is not None and default_token_generator.check_token(user, token):
+        if request.method == 'POST':
+            password = request.POST.get('password')
+            password2 = request.POST.get('password2')
+            
+            if password != password2:
+                messages.error(request, "Passwords do not match.")
+            elif len(password) < 8:
+                messages.error(request, "Password must be at least 8 characters.")
+            else:
+                user.set_password(password)
+                user.save()
+                messages.success(request, "Password has been reset successfully. You can now login.")
+                return redirect('studybuddy:login')
+        
+        return render(request, 'studybuddy/password_reset_confirm.html', {'validlink': True})
+    else:
+        messages.error(request, "This password reset link is invalid or has expired.")
+        return redirect('studybuddy:password_reset_request')
 
 
 def home_view(request):
@@ -127,3 +300,35 @@ def room_detail(request, room_id):
 
     context = {'room': room, 'messages': room_messages}
     return render(request, 'studybuddy/room_detail.html', context)
+
+
+@login_required
+def room_delete(request, room_id):
+    room = get_object_or_404(Room, id=room_id)
+    
+    # Only the creator can delete the room
+    if room.created_by != request.user:
+        messages.error(request, "You don't have permission to delete this room.")
+        return redirect('studybuddy:room_detail', room_id=room.id)
+    
+    if request.method == 'POST':
+        room.delete()
+        messages.success(request, f"Room '{room.name}' has been deleted.")
+        return redirect('studybuddy:rooms')
+    
+    return render(request, 'studybuddy/room_confirm_delete.html', {'room': room})
+
+
+@login_required
+def message_delete(request, message_id):
+    message = get_object_or_404(Message, id=message_id)
+    room_id = message.room.id
+    
+    # Only the message author can delete it
+    if message.user != request.user:
+        messages.error(request, "You don't have permission to delete this message.")
+        return redirect('studybuddy:room_detail', room_id=room_id)
+    
+    message.delete()
+    messages.success(request, "Message deleted successfully.")
+    return redirect('studybuddy:room_detail', room_id=room_id)

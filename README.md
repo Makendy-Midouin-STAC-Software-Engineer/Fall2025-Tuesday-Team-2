@@ -5,10 +5,9 @@ A collaborative study platform built with Django featuring study rooms, note-tak
 ## 🎯 Features
 
 - **User Authentication**
-  - User registration and login
+  - Simple user registration (username + password)
+  - Secure login/logout
   - Secure password hashing
-  - Email field (optional)
-  - Note: Email verification features available in code but disabled for easier deployment
 
 - **Study Rooms**
   - Create and join study rooms
@@ -46,8 +45,8 @@ A collaborative study platform built with Django featuring study rooms, note-tak
 
 5. **Access the application**
    - Open http://localhost:8000/studybuddy/
-   - Register a new account (email is optional)
-   - Start using immediately - no verification needed!
+   - Register with just username and password
+   - Start using immediately!
 
 ## 📧 Production Deployment
 

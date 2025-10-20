@@ -31,6 +31,7 @@ ALLOWED_HOSTS = [
     '.elasticbeanstalk.com',  # Allow any EB environment
     'localhost',
     '127.0.0.1',
+    'studybuddy-envi.eba-jbr4wy32.us-east-1.elasticbeanstalk.com',
 ]
 
 

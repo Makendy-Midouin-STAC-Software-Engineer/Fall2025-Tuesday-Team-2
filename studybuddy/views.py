@@ -42,7 +42,6 @@ def custom_logout(request):
 def custom_register(request):
     if request.method == 'POST':
         username = request.POST.get('username')
-        email = request.POST.get('email')
         password = request.POST.get('password')
         password2 = request.POST.get('password2')
 
@@ -51,14 +50,12 @@ def custom_register(request):
             messages.error(request, "Passwords do not match.")
         elif User.objects.filter(username=username).exists():
             messages.error(request, "Username already exists.")
-        elif email and User.objects.filter(email=email).exists():
-            messages.error(request, "An account with this email already exists.")
         else:
             # Create user and log them in immediately
-            user = User.objects.create_user(username=username, email=email or '', password=password)
+            user = User.objects.create_user(username=username, password=password)
             user.save()
             
-            # Create user profile for future use (email verification can be added later)
+            # Create user profile for future use
             UserProfile.objects.create(user=user, email_verified=True)
             
             # Log them in automatically

@@ -1,16 +1,23 @@
 # StudyBuddy Deployment Guide
 
-This guide will help you deploy StudyBuddy to production with email authentication working.
+This guide will help you deploy StudyBuddy to production.
+
+**Note:** Email verification is currently disabled for easier deployment. Users can register and login immediately without email verification. The email verification code is still in the codebase and can be re-enabled later if needed.
 
 ## 🚀 Quick Deployment Checklist
 
 ### Required Environment Variables
 
-When deploying to production, set these environment variables on your hosting platform:
+**Minimal deployment (current configuration):**
 
 ```bash
 DEBUG=False
 DJANGO_SECRET_KEY=your-randomly-generated-secret-key
+```
+
+**Optional - For email features (password reset, etc.):**
+
+```bash
 EMAIL_HOST_PASSWORD=your-email-api-key
 DEFAULT_FROM_EMAIL=StudyBuddy <noreply@yourdomain.com>
 ```

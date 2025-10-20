@@ -114,18 +114,6 @@
         .register-link a:hover {
             text-decoration: underline;
         }
-        .forgot-password {
-            text-align: center;
-            margin-top: 15px;
-        }
-        .forgot-password a {
-            color: #667eea;
-            text-decoration: none;
-            font-size: 0.9em;
-        }
-        .forgot-password a:hover {
-            text-decoration: underline;
-        }
         .back-home {
             text-align: center;
             margin-top: 15px;
@@ -167,10 +155,6 @@
 
             <button type="submit">Login</button>
         </form>
-
-        <div class="forgot-password">
-            <a href="{% url 'studybuddy:password_reset_request' %}">Forgot your password?</a>
-        </div>
 
         <div class="register-link">
             <p>Don't have an account? <a href="{% url 'studybuddy:register' %}">Register here</a></p>

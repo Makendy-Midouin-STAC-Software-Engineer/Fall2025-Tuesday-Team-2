@@ -27,16 +27,6 @@ def custom_login(request):
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            # Check if email is verified
-            try:
-                if not user.profile.email_verified:
-                    messages.warning(request, 
-                        'Please verify your email before logging in. Check your inbox for the verification link.')
-                    return render(request, 'studybuddy/login.html')
-            except UserProfile.DoesNotExist:
-                # Old users without profile - create one
-                UserProfile.objects.create(user=user, email_verified=True)
-            
             login(request, user)
             return redirect('studybuddy:note_list')  # redirect to notes list after login
         else:
@@ -59,28 +49,22 @@ def custom_register(request):
         # Validation
         if password != password2:
             messages.error(request, "Passwords do not match.")
-        elif not email:
-            messages.error(request, "Email is required.")
         elif User.objects.filter(username=username).exists():
             messages.error(request, "Username already exists.")
-        elif User.objects.filter(email=email).exists():
+        elif email and User.objects.filter(email=email).exists():
             messages.error(request, "An account with this email already exists.")
         else:
-            # Create user (but don't log them in yet - email must be verified)
-            user = User.objects.create_user(username=username, email=email, password=password)
-            user.is_active = True  # Keep active but track verification separately
+            # Create user and log them in immediately
+            user = User.objects.create_user(username=username, email=email or '', password=password)
             user.save()
             
-            # Create user profile
-            profile = UserProfile.objects.create(user=user)
+            # Create user profile for future use (email verification can be added later)
+            UserProfile.objects.create(user=user, email_verified=True)
             
-            # Send verification email
-            send_verification_email(request, user, profile)
-            
-            messages.success(request, 
-                f"Account created! Please check your email ({email}) to verify your account. "
-                "For development, the email will be shown in the terminal.")
-            return redirect('studybuddy:login')
+            # Log them in automatically
+            login(request, user)
+            messages.success(request, f"Welcome {username}! Your account has been created.")
+            return redirect('studybuddy:note_list')
             
     return render(request, 'studybuddy/register.html')
 

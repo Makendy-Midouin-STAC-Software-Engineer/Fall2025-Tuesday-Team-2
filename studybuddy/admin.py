@@ -98,16 +98,20 @@ class NoteAdmin(admin.ModelAdmin):
 
 @admin.register(Room)
 class RoomAdmin(admin.ModelAdmin):
-    list_display = ['name', 'created_by', 'created_at', 'message_count']
-    list_filter = ['created_at', 'created_by']
+    list_display = ['name', 'created_by', 'created_at', 'message_count', 'timer_is_running', 'timer_mode']
+    list_filter = ['created_at', 'created_by', 'timer_is_running', 'timer_mode']
     search_fields = ['name', 'description', 'created_by__username']
     date_hierarchy = 'created_at'
-    actions = ['delete_selected_rooms']
+    actions = ['delete_selected_rooms', 'reset_all_timers']
     readonly_fields = ['created_at', 'message_count']
     
     fieldsets = (
         ('Room Information', {
             'fields': ('name', 'description', 'created_by')
+        }),
+        ('Pomodoro Timer', {
+            'fields': ('timer_is_running', 'timer_mode', 'timer_duration', 'timer_started_at'),
+            'classes': ('collapse',)
         }),
         ('Statistics', {
             'fields': ('created_at', 'message_count'),
@@ -124,6 +128,16 @@ class RoomAdmin(admin.ModelAdmin):
         count = queryset.count()
         queryset.delete()
         self.message_user(request, f'{count} rooms deleted.')
+    
+    @admin.action(description='Reset timers for selected rooms')
+    def reset_all_timers(self, request, queryset):
+        queryset.update(
+            timer_is_running=False,
+            timer_started_at=None,
+            timer_mode='work',
+            timer_duration=1500
+        )
+        self.message_user(request, f'{queryset.count()} timers reset.')
 
 
 @admin.register(Message)

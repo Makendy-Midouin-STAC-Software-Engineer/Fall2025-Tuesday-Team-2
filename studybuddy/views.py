@@ -332,3 +332,73 @@ def message_delete(request, message_id):
     message.delete()
     messages.success(request, "Message deleted successfully.")
     return redirect('studybuddy:room_detail', room_id=room_id)
+
+
+# -----------------------------
+# POMODORO TIMER CONTROLS
+# -----------------------------
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.utils import timezone
+
+@login_required
+@require_POST
+def timer_start(request, room_id):
+    room = get_object_or_404(Room, id=room_id)
+    
+    # Only room creator can control timer
+    if room.created_by != request.user:
+        return JsonResponse({'error': 'Only the room creator can control the timer'}, status=403)
+    
+    if not room.timer_is_running:
+        room.timer_is_running = True
+        room.timer_started_at = timezone.now()
+        room.save()
+    
+    return JsonResponse(room.get_timer_state())
+
+
+@login_required
+@require_POST
+def timer_pause(request, room_id):
+    room = get_object_or_404(Room, id=room_id)
+    
+    # Only room creator can control timer
+    if room.created_by != request.user:
+        return JsonResponse({'error': 'Only the room creator can control the timer'}, status=403)
+    
+    if room.timer_is_running:
+        # Calculate remaining time and save it
+        elapsed = int((timezone.now() - room.timer_started_at).total_seconds())
+        room.timer_duration = max(0, room.timer_duration - elapsed)
+        room.timer_is_running = False
+        room.timer_started_at = None
+        room.save()
+    
+    return JsonResponse(room.get_timer_state())
+
+
+@login_required
+@require_POST
+def timer_reset(request, room_id):
+    room = get_object_or_404(Room, id=room_id)
+    
+    # Only room creator can control timer
+    if room.created_by != request.user:
+        return JsonResponse({'error': 'Only the room creator can control the timer'}, status=403)
+    
+    room.timer_is_running = False
+    room.timer_started_at = None
+    room.timer_mode = 'work'
+    room.timer_duration = 1500  # 25 minutes
+    room.save()
+    
+    return JsonResponse(room.get_timer_state())
+
+
+@login_required
+def timer_state(request, room_id):
+    """Get current timer state - all users can view"""
+    room = get_object_or_404(Room, id=room_id)
+    return JsonResponse(room.get_timer_state())

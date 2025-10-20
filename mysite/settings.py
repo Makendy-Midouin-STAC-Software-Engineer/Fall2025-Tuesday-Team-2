@@ -26,13 +26,19 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-h9^-ka1x4@8wy4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = [
+# Get allowed hosts from environment variable or use defaults
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else [
     'django-env.eba-3hna7m4m.us-east-1.elasticbeanstalk.com',
     '.elasticbeanstalk.com',  # Allow any EB environment
+    '*.elasticbeanstalk.com',
     'localhost',
     '127.0.0.1',
     'studybuddy-envi.eba-jbr4wy32.us-east-1.elasticbeanstalk.com',
 ]
+
+# In production, allow all hosts if DEBUG is False (AWS specific)
+if not DEBUG:
+    ALLOWED_HOSTS = ['*']  # AWS EB handles the host validation
 
 
 # Application definition

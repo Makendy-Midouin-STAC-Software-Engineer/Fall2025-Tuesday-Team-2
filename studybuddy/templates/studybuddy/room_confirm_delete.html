@@ -1,0 +1,22 @@
+{% extends 'studybuddy/base.html' %}
+{% block title %}Delete Room{% endblock %}
+{% block content %}
+<div style="max-width:500px;margin:50px auto;text-align:center;">
+    <h2>Delete Room</h2>
+    <p style="font-size:18px;">Are you sure you want to delete the room "<strong>{{ room.name }}</strong>"?</p>
+    <p style="color:#dc2626;">This action cannot be undone. All messages in this room will also be deleted.</p>
+    
+    <form method="POST" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" 
+                style="background-color:#dc2626;color:white;padding:12px 24px;border:none;border-radius:8px;cursor:pointer;font-size:16px;margin-right:10px;">
+            Delete Room
+        </button>
+        <a href="{% url 'studybuddy:room_detail' room.id %}" 
+           style="background-color:#6b7280;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-size:16px;display:inline-block;">
+            Cancel
+        </a>
+    </form>
+</div>
+{% endblock %}
+

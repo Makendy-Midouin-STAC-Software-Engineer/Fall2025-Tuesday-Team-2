@@ -9,6 +9,9 @@ urlpatterns = [
     path("register/", views.custom_register, name='register'),
     path("login/", views.custom_login, name='login'),
     path("logout/", views.custom_logout, name='logout'),
+    path("verify-email/<uuid:token>/", views.verify_email, name='verify_email'),
+    path("forgot-password/", views.password_reset_request, name='password_reset_request'),
+    path("reset-password/<uidb64>/<token>/", views.password_reset_confirm, name='password_reset_confirm'),
     
     # Notes URLs
     path("notes/", views.NoteListView.as_view(), name='note_list'),
@@ -19,4 +22,12 @@ urlpatterns = [
     # Rooms URLs
     path("rooms/", views.rooms, name='rooms'),
     path("room/<int:room_id>/", views.room_detail, name='room_detail'),
+    path("room/<int:room_id>/delete/", views.room_delete, name='room_delete'),
+    path("message/<int:message_id>/delete/", views.message_delete, name='message_delete'),
+    
+    # Pomodoro Timer URLs
+    path("room/<int:room_id>/timer/start/", views.timer_start, name='timer_start'),
+    path("room/<int:room_id>/timer/pause/", views.timer_pause, name='timer_pause'),
+    path("room/<int:room_id>/timer/reset/", views.timer_reset, name='timer_reset'),
+    path("room/<int:room_id>/timer/state/", views.timer_state, name='timer_state'),
 ]

@@ -11,10 +11,20 @@
 </form>
 
 {% for room in rooms %}
-    <div style="background-color:#e5e7eb;padding:15px;border-radius:10px;margin-bottom:15px;">
-        <a href="{% url 'studybuddy:room_detail' room.id %}" style="color:#2563eb;font-weight:bold;font-size:18px;text-decoration:none;">{{ room.name }}</a><br>
-        <span style="color:#555;font-size:0.9em;">Created by: {{ room.created_by.username }}</span><br>
-        {{ room.description }}
+    <div style="background-color:#e5e7eb;padding:15px;border-radius:10px;margin-bottom:15px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="flex:1;">
+            <a href="{% url 'studybuddy:room_detail' room.id %}" style="color:#2563eb;font-weight:bold;font-size:18px;text-decoration:none;">{{ room.name }}</a><br>
+            <span style="color:#555;font-size:0.9em;">Created by: {{ room.created_by.username }} | {{ room.created_at|date:"M d, Y" }}</span><br>
+            <span style="color:#333;">{{ room.description }}</span>
+        </div>
+        {% if room.created_by == request.user %}
+        <div>
+            <a href="{% url 'studybuddy:room_delete' room.id %}" 
+               style="background-color:#dc2626;color:white;padding:8px 16px;border-radius:8px;text-decoration:none;font-size:14px;">
+                Delete
+            </a>
+        </div>
+        {% endif %}
     </div>
 {% empty %}
     <div style="background-color:#e5e7eb;padding:15px;border-radius:10px;">
@@ -22,4 +32,5 @@
     </div>
 {% endfor %}
 {% endblock %}
+
 

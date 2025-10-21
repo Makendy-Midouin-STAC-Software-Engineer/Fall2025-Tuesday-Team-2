@@ -1,11 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Home</title>
+    <title>StudyBuddy - Home</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 100px auto;
+            padding: 20px;
+            text-align: center;
+            background-color: #f9fafb;
+        }
+        h2 {
+            color: #1f2937;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 1.2em;
+            color: #4b5563;
+        }
+        a {
+            display: inline-block;
+            background-color: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 10px;
+            font-weight: bold;
+        }
+        a:hover {
+            background-color: #1d4ed8;
+        }
+        .signup-btn {
+            background-color: #16a34a;
+        }
+        .signup-btn:hover {
+            background-color: #15803d;
+        }
+    </style>
 </head>
 <body>
-    <h2>Welcome, {{ request.user.username }}!</h2>
-    <p>You are logged in.</p>
-    <a href="{% url 'studybuddy:logout' %}">Logout</a>
+    <h2>📚 Welcome to StudyBuddy!</h2>
+    <p>Your collaborative study platform</p>
+    
+    <div style="margin-top: 40px;">
+        <a href="{% url 'studybuddy:register' %}" class="signup-btn">Sign Up</a>
+        <a href="{% url 'studybuddy:login' %}">Login</a>
+    </div>
 </body>
 </html>

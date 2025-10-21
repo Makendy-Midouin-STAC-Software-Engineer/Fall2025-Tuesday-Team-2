@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,14 +21,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-h9^-ka1x4@8wy48rn)o*4erh-yvcq1_q6=w^@q5l&g-5_^_3uz'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-h9^-ka1x4@8wy48rn)o*4erh-yvcq1_q6=w^@q5l&g-5_^_3uz')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['django-env.eba-3hna7m4m.us-east-1.elasticbeanstalk.com',
-"localhost",
-"127.0.0.1",]
+# Get allowed hosts from environment variable or use defaults
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else [
+    'django-env.eba-3hna7m4m.us-east-1.elasticbeanstalk.com',
+    '.elasticbeanstalk.com',  # Allow any EB environment
+    '*.elasticbeanstalk.com',
+    'localhost',
+    '127.0.0.1',
+    'studybuddy-envi.eba-jbr4wy32.us-east-1.elasticbeanstalk.com',
+]
+
+# In production, allow all hosts if DEBUG is False (AWS specific)
+if not DEBUG:
+    ALLOWED_HOSTS = ['*']  # AWS EB handles the host validation
 
 
 # Application definition
@@ -62,6 +73,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -126,3 +138,23 @@ STATIC_ROOT = 'static'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Email Configuration
+# Automatically switches between development and production
+if DEBUG:
+    # Development: emails print to console
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    # Production: real email sending
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.sendgrid.net')
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+    EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'apikey')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'StudyBuddy <noreply@studybuddy.com>')
+
+# Authentication Settings
+LOGIN_URL = '/studybuddy/login/'
+LOGIN_REDIRECT_URL = '/studybuddy/notes/'

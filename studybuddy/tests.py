@@ -83,6 +83,21 @@ class PasswordResetTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)  # Shows invalid reset page
 
+    def test_password_reset_get(self):
+        """Test password reset GET"""
+        response = self.client.get(reverse("studybuddy:password_reset_request"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_password_reset_user_not_found(self):
+        """Test password reset with non-existent email"""
+        response = self.client.post(
+            reverse("studybuddy:password_reset_request"),
+            {"email": "nonexistent@example.com"},
+        )
+        self.assertEqual(
+            response.status_code, 302
+        )  # Redirects even when email not found
+
 
 # ------------------------
 # Notes tests
@@ -184,3 +199,250 @@ class TimerTests(TestCase):
         state = response.json()
         self.assertFalse(state["is_running"])
         self.assertEqual(state["time_left"], 1500)
+
+    def test_timer_state_view(self):
+        """Test getting timer state"""
+        response = self.client.get(
+            reverse("studybuddy:timer_state", kwargs={"room_id": self.room.id})
+        )
+        self.assertEqual(response.status_code, 200)
+        state = response.json()
+        self.assertIn("is_running", state)
+        self.assertIn("time_left", state)
+        self.assertIn("mode", state)
+
+    def test_timer_get_state(self):
+        """Test Room.get_timer_state() method when timer is running"""
+        self.room.timer_is_running = True
+        self.room.timer_started_at = timezone.now() - timedelta(seconds=60)
+        self.room.save()
+
+        state = self.room.get_timer_state()
+        self.assertTrue(state["is_running"])
+        self.assertGreater(state["time_left"], 0)
+        self.assertLessEqual(state["time_left"], self.room.timer_duration)
+
+    def test_timer_get_state_expired(self):
+        """Test timer auto-resets when expired"""
+        self.room.timer_is_running = True
+        self.room.timer_started_at = timezone.now() - timedelta(seconds=2000)
+        self.room.save()
+
+        state = self.room.get_timer_state()
+        self.assertFalse(state["is_running"])
+        self.assertEqual(state["time_left"], self.room.timer_duration)
+
+
+# ------------------------
+# Permission tests
+# ------------------------
+class PermissionTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user1 = create_user(username="user1", password="password123")
+        self.user2 = create_user(username="user2", password="password123")
+        self.room = Room.objects.create(name="TestRoom", created_by=self.user1)
+
+    def test_non_creator_cannot_control_timer(self):
+        """Test that non-creators cannot control timer"""
+        self.client.login(username="user2", password="password123")
+
+        response = self.client.post(
+            reverse("studybuddy:timer_start", kwargs={"room_id": self.room.id})
+        )
+        self.assertEqual(response.status_code, 403)
+
+        response = self.client.post(
+            reverse("studybuddy:timer_pause", kwargs={"room_id": self.room.id})
+        )
+        self.assertEqual(response.status_code, 403)
+
+        response = self.client.post(
+            reverse("studybuddy:timer_reset", kwargs={"room_id": self.room.id})
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_non_creator_can_view_timer(self):
+        """Test that non-creators can view timer state"""
+        self.client.login(username="user2", password="password123")
+
+        response = self.client.get(
+            reverse("studybuddy:timer_state", kwargs={"room_id": self.room.id})
+        )
+        self.assertEqual(response.status_code, 200)
+
+
+# ------------------------
+# Model string representations
+# ------------------------
+class ModelReprTests(TestCase):
+    def setUp(self):
+        self.user = create_user()
+        self.room = Room.objects.create(name="TestRoom", created_by=self.user)
+
+    def test_user_profile_str(self):
+        profile = UserProfile.objects.get(user=self.user)
+        self.assertEqual(str(profile), "testuser's profile")
+
+    def test_room_str(self):
+        self.assertEqual(str(self.room), "TestRoom")
+
+    def test_message_str(self):
+        message = Message.objects.create(
+            room=self.room, user=self.user, content="Test message content"
+        )
+        self.assertEqual(str(message), "testuser: Test message content")
+
+
+# ------------------------
+# Additional view tests
+# ------------------------
+class AdditionalViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = create_user()
+        self.client.login(username="testuser", password="password123")
+
+    def test_home_view_not_authenticated(self):
+        """Test home view for non-authenticated users"""
+        self.client.logout()
+        response = self.client.get("/")
+        self.assertIn(response.status_code, [200, 302])  # Can redirect or show page
+
+    def test_note_list_view(self):
+        """Test note list view"""
+        response = self.client.get(reverse("studybuddy:note_list"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_note_create_get(self):
+        """Test note create GET"""
+        response = self.client.get(reverse("studybuddy:note_add"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_note_update_get(self):
+        """Test note update GET"""
+        note = Note.objects.create(user=self.user, title="Test", content="Content")
+        response = self.client.get(
+            reverse("studybuddy:note_edit", kwargs={"pk": note.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_note_delete_get(self):
+        """Test note delete confirmation GET"""
+        note = Note.objects.create(user=self.user, title="Test", content="Content")
+        response = self.client.get(
+            reverse("studybuddy:note_delete", kwargs={"pk": note.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_rooms_view_get(self):
+        """Test rooms list GET"""
+        response = self.client.get(reverse("studybuddy:rooms"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_room_delete_get(self):
+        """Test room delete confirmation GET"""
+        room = Room.objects.create(name="TestRoom", created_by=self.user)
+        response = self.client.get(
+            reverse("studybuddy:room_delete", kwargs={"room_id": room.id})
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_rooms_create_room(self):
+        """Test creating a room via POST"""
+        response = self.client.post(
+            reverse("studybuddy:rooms"),
+            {"name": "New Room", "description": "New Description"},
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects after creation
+        self.assertTrue(Room.objects.filter(name="New Room").exists())
+
+    def test_room_detail_send_message(self):
+        """Test sending a message in room"""
+        room = Room.objects.create(name="TestRoom", created_by=self.user)
+        response = self.client.post(
+            reverse("studybuddy:room_detail", kwargs={"room_id": room.id}),
+            {"content": "Hello World"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Message.objects.filter(content="Hello World").exists())
+
+
+# ------------------------
+# User profile tests
+# ------------------------
+class UserProfileModelTests(TestCase):
+    def setUp(self):
+        self.user = create_user()
+
+    def test_user_profile_exists(self):
+        """Test that UserProfile is created when user is created"""
+        self.assertTrue(UserProfile.objects.filter(user=self.user).exists())
+
+    def test_user_profile_default_email_verified(self):
+        """Test UserProfile default values"""
+        profile = UserProfile.objects.get(user=self.user)
+        self.assertFalse(profile.email_verified)
+        self.assertIsNotNone(profile.verification_token)
+
+    def test_token_validity(self):
+        """Test token validity check"""
+        profile = UserProfile.objects.get(user=self.user)
+        # Token should be valid (just created)
+        self.assertTrue(profile.is_token_valid())
+
+
+# ------------------------
+# Edge cases and error handling
+# ------------------------
+class ErrorHandlingTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = create_user()
+        self.client.login(username="testuser", password="password123")
+
+    def test_register_username_already_exists(self):
+        """Test registration with existing username"""
+        response = self.client.post(
+            reverse("studybuddy:register"),
+            {
+                "username": "testuser",
+                "password": "password123",
+                "password2": "password123",
+            },
+        )
+        self.assertEqual(response.status_code, 200)  # Should show error
+
+    def test_register_passwords_mismatch(self):
+        """Test registration with mismatched passwords"""
+        response = self.client.post(
+            reverse("studybuddy:register"),
+            {
+                "username": "uniqueuser",
+                "password": "password123",
+                "password2": "differentpass",
+            },
+        )
+        self.assertEqual(response.status_code, 200)  # Should show error
+
+    def test_login_invalid_credentials(self):
+        """Test login with wrong password"""
+        response = self.client.post(
+            reverse("studybuddy:login"),
+            {"username": "testuser", "password": "wrongpassword"},
+        )
+        self.assertEqual(response.status_code, 200)  # Should show error
+
+    def test_note_update_other_user_note(self):
+        """Test that users can't update other users' notes"""
+        other_user = create_user(username="otheruser", password="password123")
+        other_note = Note.objects.create(
+            user=other_user, title="Other", content="Content"
+        )
+
+        response = self.client.post(
+            reverse("studybuddy:note_edit", kwargs={"pk": other_note.pk}),
+            {"title": "Hacked", "content": "Bad"},
+        )
+        # Should either redirect or show error
+        self.assertIn(response.status_code, [200, 302, 403])

@@ -1,0 +1,29 @@
+[run]
+source = .
+omit = 
+    */tests.py
+    */migrations/*
+    */__pycache__/*
+    */venv/*
+    */env/*
+    */virtualenv/*
+    */manage.py
+    */settings/*
+    */wsgi.py
+    */asgi.py
+
+[report]
+precision = 2
+show_missing = True
+skip_covered = False
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+
+
+

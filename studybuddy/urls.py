@@ -9,7 +9,6 @@ urlpatterns = [
     path("register/", views.custom_register, name="register"),
     path("login/", views.custom_login, name="login"),
     path("logout/", views.custom_logout, name="logout"),
-    path("verify-email/<uuid:token>/", views.verify_email, name="verify_email"),
     path(
         "forgot-password/", views.password_reset_request, name="password_reset_request"
     ),

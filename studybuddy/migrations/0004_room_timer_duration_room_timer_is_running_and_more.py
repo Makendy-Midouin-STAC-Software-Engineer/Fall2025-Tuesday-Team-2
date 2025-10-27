@@ -6,28 +6,32 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('studybuddy', '0003_userprofile'),
+        ("studybuddy", "0003_userprofile"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='room',
-            name='timer_duration',
+            model_name="room",
+            name="timer_duration",
             field=models.IntegerField(default=1500),
         ),
         migrations.AddField(
-            model_name='room',
-            name='timer_is_running',
+            model_name="room",
+            name="timer_is_running",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='room',
-            name='timer_mode',
-            field=models.CharField(choices=[('work', 'Work'), ('break', 'Break')], default='work', max_length=10),
+            model_name="room",
+            name="timer_mode",
+            field=models.CharField(
+                choices=[("work", "Work"), ("break", "Break")],
+                default="work",
+                max_length=10,
+            ),
         ),
         migrations.AddField(
-            model_name='room',
-            name='timer_started_at',
+            model_name="room",
+            name="timer_started_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
     ]

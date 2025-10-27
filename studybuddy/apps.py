@@ -2,5 +2,5 @@ from django.apps import AppConfig
 
 
 class StudybuddyConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'studybuddy'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "studybuddy"

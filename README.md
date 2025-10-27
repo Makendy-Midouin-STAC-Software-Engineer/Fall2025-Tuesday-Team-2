@@ -1,4 +1,14 @@
 # StudyBuddy - Fall2025-Tuesday-Team-2
+## Build Status
+
+**develop**![CI Status](https://github.com/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/actions/workflows/ci-cd.yml/badge.svg?branch=develop)
+**main**![CI Status](https://github.com/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/actions/workflows/ci-cd.yml/badge.svg?branch=main)
+
+## Coverage
+
+**devlop:**![Coverage Status](https://coveralls.io/repos/github/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/badge.svg?branch=develop)
+**main:**![Coverage Status](https://coveralls.io/repos/github/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/badge.svg?branch=main)
+**Justin:**[![Coverage Status](https://coveralls.io/repos/github/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/badge.svg?branch=Justin)](https://coveralls.io/github/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2?branch=Justin)
 
 A collaborative study platform built with Django featuring study rooms, note-taking, Pomodoro timers, and email authentication.
 

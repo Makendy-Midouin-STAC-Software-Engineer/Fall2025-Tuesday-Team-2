@@ -56,7 +56,8 @@ jobs:
     - name: Upload Coverage to Coveralls
       uses: coverallsapp/github-action@v2
       with:
-        github-token: ${{ secrets.GIT_TOKEN }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}          # GitHub Actions token (auto-provided)
+        coveralls-token: ${{ secrets.COVERALLS_REPO_TOKEN }}  # Your Coveralls token
 
   deploy:
     needs: test

@@ -7,7 +7,7 @@
 ## Coverage
 
 **main:**![Coverage Status](https://coveralls.io/repos/github/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/badge.svg?branch=main)
-**devlop:**![Coverage Status](https://coveralls.io/repos/github/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/badge.svg?branch=develop)
+**develop:**![Coverage Status](https://coveralls.io/repos/github/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/badge.svg?branch=develop)
 **Justin:**[![Coverage Status](https://coveralls.io/repos/github/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/badge.svg?branch=Justin)](https://coveralls.io/github/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2?branch=Justin)
 
 A collaborative study platform built with Django featuring study rooms, note-taking, Pomodoro timers, and email authentication.

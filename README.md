@@ -1,7 +1,11 @@
 # StudyBuddy - Fall2025-Tuesday-Team-2
 
 ## Build Status
-![Django CI/CD](https://github.com/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/actions/workflows/django.yml/badge.svg)
+**Main branch:**
+[![Django CI/CD](https://github.com/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/actions/workflows/ci-cd.yml/badge.svg?branch=main)](https://github.com/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/actions/workflows/ci-cd.yml)
+
+**Develop branch:**
+[![Django CI/CD](https://github.com/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/actions/workflows/ci-cd.yml/badge.svg?branch=develop)](https://github.com/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/actions/workflows/ci-cd.yml)
 
 ## Code Coverage
 **Main branch:**  

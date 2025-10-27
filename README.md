@@ -1,11 +1,13 @@
 # StudyBuddy - Fall2025-Tuesday-Team-2
-### Develop:
-[![Develop CI](https://github.com/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/actions/workflows/ci.yml)
-[![Coverage Status](https://coveralls.io/repos/github/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/badge.svg?branch=develop)](https://coveralls.io/github/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2?branch=develop)
+## Build Status
 
-### Main:
-[![Main CI](https://github.com/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/actions/workflows/ci.yml)
-[![Coverage Status](https://coveralls.io/repos/github/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/badge.svg?branch=main)](https://coveralls.io/github/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2?branch=main)
+![CI Status](https://github.com/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/actions/workflows/ci-cd.yml/badge.svg?branch=develop)
+![CI Status](https://github.com/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/actions/workflows/ci-cd.yml/badge.svg?branch=main)
+
+## Coverage
+
+![Coverage Status](https://coveralls.io/repos/github/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/badge.svg?branch=develop)
+![Coverage Status](https://coveralls.io/repos/github/Makendy-Midouin-STAC-Software-Engineer/Fall2025-Tuesday-Team-2/badge.svg?branch=main)
 
 
 A collaborative study platform built with Django featuring study rooms, note-taking, Pomodoro timers, and email authentication.

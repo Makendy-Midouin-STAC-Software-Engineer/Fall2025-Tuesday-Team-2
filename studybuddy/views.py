@@ -11,6 +11,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.core.mail import send_mail
+from django.contrib.sites.shortcuts import get_current_site
+from django.template.loader import render_to_string
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
@@ -70,6 +72,55 @@ def custom_register(request):
             return redirect("studybuddy:note_list")
 
     return render(request, "studybuddy/register.html")
+
+
+def send_verification_email(request, user, profile):
+    """Send email verification link to user"""
+    verification_link = request.build_absolute_uri(
+        f"/studybuddy/verify-email/{profile.verification_token}/"
+    )
+
+    subject = "Verify your StudyBuddy account"
+    message = (
+        f"Hi {user.username},\n\n"
+        "Thank you for registering with StudyBuddy!\n\n"
+        "Please click the link below to verify your email address:\n"
+        f"{verification_link}\n\n"
+        "This link will expire in 24 hours.\n\n"
+        "If you didn't create this account, please ignore this email.\n\n"
+        "Best regards,\nThe StudyBuddy Team"
+    )
+
+    send_mail(
+        subject,
+        message,
+        "noreply@studybuddy.com",
+        [user.email],
+        fail_silently=False,
+    )
+
+
+def verify_email(request, token):
+    """Verify user's email with token"""
+    try:
+        profile = UserProfile.objects.get(verification_token=token)
+
+        if profile.email_verified:
+            messages.info(request, "Your email is already verified. You can login now.")
+        elif profile.is_token_valid():
+            profile.email_verified = True
+            profile.save()
+            messages.success(request, "Email verified successfully! You can now login.")
+        else:
+            messages.error(
+                request,
+                "This verification link has expired. Please contact support.",
+            )
+
+    except UserProfile.DoesNotExist:
+        messages.error(request, "Invalid verification link.")
+
+    return redirect("studybuddy:login")
 
 
 def password_reset_request(request):

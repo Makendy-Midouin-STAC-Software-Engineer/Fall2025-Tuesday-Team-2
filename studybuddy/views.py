@@ -339,3 +339,11 @@ def timer_state(request, room_id):
     """Get current timer state - all users can view"""
     room = get_object_or_404(Room, id=room_id)
     return JsonResponse(room.get_timer_state())
+
+# -----------------------------
+# Profile
+# -----------------------------
+
+@login_required
+def profile(request):
+    return render(request, "studybuddy/profile.html")

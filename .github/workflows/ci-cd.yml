@@ -42,22 +42,21 @@ jobs:
     - name: Run Flake8
       run: flake8 . --max-line-length=88
 
-    # Run Django tests with coverage
     - name: Run Tests with Coverage
       run: |
         python manage.py migrate
         coverage run --source='studybuddy' manage.py test
-        coverage xml
+        coverage xml  # generate coverage.xml for Coveralls
 
     # Display coverage report
     - name: Generate Coverage Report
       run: coverage report
 
-    # Upload coverage to Coveralls
     - name: Upload Coverage to Coveralls
       uses: coverallsapp/github-action@v2
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}          # GitHub Actions token (auto-provided)
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path-to-lcov: coverage.xml
 
   deploy:
     needs: test

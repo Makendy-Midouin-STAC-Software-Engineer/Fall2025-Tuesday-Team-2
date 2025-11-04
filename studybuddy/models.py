@@ -15,11 +15,15 @@ class UserProfile(models.Model):
     )
     token_created_at = models.DateTimeField(auto_now_add=True)
 
+    # Editable fields (no profile image)
+    bio = models.TextField(blank=True, null=True)
+    location = models.CharField(max_length=100, blank=True, null=True)
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+
     def __str__(self):
         return f"{self.user.username}'s profile"
 
     def is_token_valid(self):
-        """Check if verification token is still valid (24 hours)"""
         return timezone.now() < self.token_created_at + timedelta(hours=24)
 
 

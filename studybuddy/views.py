@@ -346,14 +346,16 @@ def timer_state(request, room_id):
     room = get_object_or_404(Room, id=room_id)
     return JsonResponse(room.get_timer_state())
 
+
 # -----------------------------
 # Profile
 # -----------------------------
 
+
 @login_required
 def edit_profile(request):
-    if request.method == 'POST':
-        if 'update_info' in request.POST:
+    if request.method == "POST":
+        if "update_info" in request.POST:
             # Updating account & profile info
             u_form = UserUpdateForm(request.POST, instance=request.user)
             p_form = ProfileUpdateForm(request.POST, instance=request.user.profile)
@@ -362,13 +364,13 @@ def edit_profile(request):
                 u_form.save()
                 p_form.save()
                 messages.success(request, "Your profile has been updated!")
-                return redirect('studybuddy:edit_profile')
+                return redirect("studybuddy:edit_profile")
             else:
                 messages.error(request, "Please fix the errors below.")
 
             pw_form = PasswordChangeForm(user=request.user)  # fresh password form
 
-        elif 'change_password' in request.POST:
+        elif "change_password" in request.POST:
             # Changing password
             pw_form = PasswordChangeForm(user=request.user, data=request.POST)
             u_form = UserUpdateForm(instance=request.user)
@@ -378,7 +380,7 @@ def edit_profile(request):
                 user = pw_form.save()
                 update_session_auth_hash(request, user)  # keeps user logged in
                 messages.success(request, "Your password has been updated!")
-                return redirect('studybuddy:edit_profile')
+                return redirect("studybuddy:edit_profile")
             else:
                 messages.error(request, "Please fix the errors below.")
     else:
@@ -386,14 +388,10 @@ def edit_profile(request):
         p_form = ProfileUpdateForm(instance=request.user.profile)
         pw_form = PasswordChangeForm(user=request.user)
 
-    context = {
-        'u_form': u_form,
-        'p_form': p_form,
-        'pw_form': pw_form
-    }
-    return render(request, 'studybuddy/edit_profile.html', context)
+    context = {"u_form": u_form, "p_form": p_form, "pw_form": pw_form}
+    return render(request, "studybuddy/edit_profile.html", context)
 
 
 @login_required
 def profile(request):
-    return render(request, 'studybuddy/profile.html', {'user': request.user})
+    return render(request, "studybuddy/profile.html", {"user": request.user})

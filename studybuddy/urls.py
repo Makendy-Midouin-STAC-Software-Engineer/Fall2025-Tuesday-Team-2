@@ -32,6 +32,7 @@ urlpatterns = [
     path(
         "message/<int:message_id>/delete/", views.message_delete, name="message_delete"
     ),
+    path('rooms/<int:room_id>/send_message/', views.send_message, name='send_message'),
     # Pomodoro Timer URLs
     path("room/<int:room_id>/timer/start/", views.timer_start, name="timer_start"),
     path("room/<int:room_id>/timer/pause/", views.timer_pause, name="timer_pause"),

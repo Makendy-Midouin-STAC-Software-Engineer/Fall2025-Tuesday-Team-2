@@ -1,0 +1,23 @@
+{% extends 'studybuddy/base.html' %}
+{% block title %}{{ room.name }}{% endblock %}
+{% block content %}
+<h1>{{ room.name }}</h1>
+<p>{{ room.description }}</p>
+<p>Created by {{ room.created_by.username }}</p>
+
+{% if error %}
+    <div style="color:red;">{{ error }}</div>
+{% endif %}
+
+<form method="POST" action="{% url 'studybuddy:send_message' room.id %}">
+    {% csrf_token %}
+    <textarea name="content" placeholder="Type a message"></textarea>
+    <button type="submit">Send</button>
+</form>
+
+{% for message in room.message_set.all %}
+    <p><strong>{{ message.user.username }}:</strong> {{ message.content }}</p>
+{% empty %}
+    <p>No messages yet.</p>
+{% endfor %}
+{% endblock %}

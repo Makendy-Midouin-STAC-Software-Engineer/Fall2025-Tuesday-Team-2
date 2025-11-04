@@ -1,0 +1,191 @@
+{% extends 'studybuddy/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="profile-container">
+    <h2>Edit Profile</h2>
+    <hr>
+
+    <!-- Display success/error messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Update User & Profile Info -->
+    <form method="POST">
+        {% csrf_token %}
+        <h3>Account Information</h3>
+
+        <div class="form-group">
+            <label>Username:</label>
+            {{ u_form.username }}
+            {% if u_form.username.errors %}
+                <div class="form-error">{{ u_form.username.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label>First Name:</label>
+            {{ u_form.first_name }}
+            {% if u_form.first_name.errors %}
+                <div class="form-error">{{ u_form.first_name.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label>Last Name:</label>
+            {{ u_form.last_name }}
+            {% if u_form.last_name.errors %}
+                <div class="form-error">{{ u_form.last_name.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label>Email:</label>
+            {{ u_form.email }}
+            {% if u_form.email.errors %}
+                <div class="form-error">{{ u_form.email.errors }}</div>
+            {% endif %}
+        </div>
+
+        <h3>Profile Information</h3>
+
+        <div class="form-group">
+            <label>Bio:</label>
+            {{ p_form.bio }}
+            {% if p_form.bio.errors %}
+                <div class="form-error">{{ p_form.bio.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label>Phone Number:</label>
+            {{ p_form.phone_number }}
+            {% if p_form.phone_number.errors %}
+                <div class="form-error">{{ p_form.phone_number.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label>Location:</label>
+            {{ p_form.location }}
+            {% if p_form.location.errors %}
+                <div class="form-error">{{ p_form.location.errors }}</div>
+            {% endif %}
+        </div>
+
+        <button type="submit" name="update_info" class="btn-save">Save Changes</button>
+    </form>
+
+    <hr>
+
+    <!-- Password Change -->
+    <form method="POST">
+        {% csrf_token %}
+        <h3>Change Password</h3>
+
+        <div class="form-group">
+            <label>Current Password:</label>
+            {{ pw_form.old_password }}
+            {% if pw_form.old_password.errors %}
+                <div class="form-error">{{ pw_form.old_password.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label>New Password:</label>
+            {{ pw_form.new_password1 }}
+            {% if pw_form.new_password1.errors %}
+                <div class="form-error">{{ pw_form.new_password1.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label>Confirm New Password:</label>
+            {{ pw_form.new_password2 }}
+            {% if pw_form.new_password2.errors %}
+                <div class="form-error">{{ pw_form.new_password2.errors }}</div>
+            {% endif %}
+        </div>
+
+        <button type="submit" name="change_password" class="btn-password">Update Password</button>
+    </form>
+</div>
+
+<style>
+.profile-container {
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 30px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    border: 1px solid #ddd;
+}
+
+.profile-container h2, .profile-container h3 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+}
+
+.btn-save {
+    padding: 10px 25px;
+    background: #28a745;
+    color: white;
+    border-radius: 6px;
+    border: none;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+.btn-save:hover {
+    background: #218838;
+}
+
+.btn-password {
+    padding: 10px 25px;
+    background: #17a2b8;
+    color: white;
+    border-radius: 6px;
+    border: none;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+.btn-password:hover {
+    background: #117a8b;
+}
+
+.form-error {
+    color: #dc3545;
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+.message {
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.message.success { background-color: #d4edda; color: #155724; }
+.message.error { background-color: #f8d7da; color: #721c24; }
+</style>
+{% endblock %}

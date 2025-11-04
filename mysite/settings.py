@@ -88,7 +88,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "mysite.wsgi.application"
 
 # Database
-# Use /tmp directory on Elastic Beanstalk (read-write), fallback to BASE_DIR for local dev
+# Use /tmp on Elastic Beanstalk (read-write), fallback to BASE_DIR for local dev
 if os.environ.get("AWS_EXECUTION_ENV") or os.path.exists("/tmp"):
     # On Elastic Beanstalk or Linux - use /tmp directory which is writable
     DATABASES = {

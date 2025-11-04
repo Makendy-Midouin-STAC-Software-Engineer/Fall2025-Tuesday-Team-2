@@ -173,7 +173,7 @@ def edit_profile(request):
             return redirect("studybuddy:home")
     else:
         form = EditProfileForm(instance=request.user)
-    
+
     return render(request, "studybuddy/edit_profile.html", {"form": form})
 
 
@@ -362,19 +362,21 @@ def get_messages(request, room_id):
     """Get messages for a room in JSON format for real-time chat updates"""
     room = get_object_or_404(Room, id=room_id)
     room_messages = room.messages.order_by("timestamp")
-    
+
     messages_data = []
     for msg in room_messages:
         # Send ISO 8601 timestamp for frontend timezone conversion
         timestamp_iso = msg.timestamp.isoformat()
-        messages_data.append({
-            "id": msg.id,
-            "user": msg.user.username,
-            "content": msg.content,
-            "timestamp": timestamp_iso,
-            "is_own": msg.user.id == request.user.id,
-        })
-    
+        messages_data.append(
+            {
+                "id": msg.id,
+                "user": msg.user.username,
+                "content": msg.content,
+                "timestamp": timestamp_iso,
+                "is_own": msg.user.id == request.user.id,
+            }
+        )
+
     return JsonResponse({"messages": messages_data})
 
 
@@ -384,22 +386,24 @@ def send_message(request, room_id):
     """Send a message via AJAX - returns JSON response"""
     room = get_object_or_404(Room, id=room_id)
     content = request.POST.get("content", "").strip()
-    
+
     if not content:
         return JsonResponse({"error": "Message content is required"}, status=400)
-    
+
     message = Message.objects.create(room=room, user=request.user, content=content)
-    
+
     # Send ISO 8601 timestamp for frontend timezone conversion
     timestamp_iso = message.timestamp.isoformat()
-    
-    return JsonResponse({
-        "success": True,
-        "message": {
-            "id": message.id,
-            "user": message.user.username,
-            "content": message.content,
-            "timestamp": timestamp_iso,
-            "is_own": True,
+
+    return JsonResponse(
+        {
+            "success": True,
+            "message": {
+                "id": message.id,
+                "user": message.user.username,
+                "content": message.content,
+                "timestamp": timestamp_iso,
+                "is_own": True,
+            },
         }
-    })
+    )

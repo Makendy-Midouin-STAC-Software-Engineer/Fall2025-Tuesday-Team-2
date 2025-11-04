@@ -467,7 +467,7 @@ class EditProfileTests(TestCase):
         """Test updating username via edit profile"""
         response = self.client.post(
             reverse("studybuddy:edit_profile"),
-            {"username": "newusername", "first_name": "", "last_name": ""}
+            {"username": "newusername", "first_name": "", "last_name": ""},
         )
         self.assertEqual(response.status_code, 302)  # Redirect on success
         self.user.refresh_from_db()
@@ -477,7 +477,7 @@ class EditProfileTests(TestCase):
         """Test updating first_name and last_name"""
         response = self.client.post(
             reverse("studybuddy:edit_profile"),
-            {"username": "testuser", "first_name": "John", "last_name": "Doe"}
+            {"username": "testuser", "first_name": "John", "last_name": "Doe"},
         )
         self.assertEqual(response.status_code, 302)
         self.user.refresh_from_db()
@@ -504,10 +504,8 @@ class RealTimeChatTests(TestCase):
     def test_get_messages_api(self):
         """Test get_messages API endpoint returns JSON"""
         # Create a message
-        Message.objects.create(
-            room=self.room, user=self.user, content="Hello World"
-        )
-        
+        Message.objects.create(room=self.room, user=self.user, content="Hello World")
+
         response = self.client.get(
             reverse("studybuddy:get_messages", kwargs={"room_id": self.room.id})
         )
@@ -523,7 +521,7 @@ class RealTimeChatTests(TestCase):
         """Test send_message API endpoint via AJAX"""
         response = self.client.post(
             reverse("studybuddy:send_message", kwargs={"room_id": self.room.id}),
-            {"content": "Test message"}
+            {"content": "Test message"},
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -535,7 +533,7 @@ class RealTimeChatTests(TestCase):
         """Test send_message with empty content returns error"""
         response = self.client.post(
             reverse("studybuddy:send_message", kwargs={"room_id": self.room.id}),
-            {"content": ""}
+            {"content": ""},
         )
         self.assertEqual(response.status_code, 400)
         data = response.json()
@@ -547,7 +545,7 @@ class RealTimeChatTests(TestCase):
         Message.objects.create(room=self.room, user=self.user, content="Message 1")
         Message.objects.create(room=self.room, user=other_user, content="Message 2")
         Message.objects.create(room=self.room, user=self.user, content="Message 3")
-        
+
         response = self.client.get(
             reverse("studybuddy:get_messages", kwargs={"room_id": self.room.id})
         )

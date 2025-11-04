@@ -18,10 +18,15 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 
+from .forms import UserUpdateForm, ProfileUpdateForm
+
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
+
+
 import uuid
 
 from .models import Note, Room, Message, UserProfile
-from .forms import EditProfileForm
 
 # -----------------------------
 # AUTHENTICATION VIEWS
@@ -469,3 +474,53 @@ def send_message(request, room_id):
             },
         }
     )
+
+
+# -----------------------------
+# Profile
+# -----------------------------
+
+
+@login_required
+def edit_profile(request):
+    if request.method == "POST":
+        if "update_info" in request.POST:
+            # Updating account & profile info
+            u_form = UserUpdateForm(request.POST, instance=request.user)
+            p_form = ProfileUpdateForm(request.POST, instance=request.user.profile)
+
+            if u_form.is_valid() and p_form.is_valid():
+                u_form.save()
+                p_form.save()
+                messages.success(request, "Your profile has been updated!")
+                return redirect("studybuddy:edit_profile")
+            else:
+                messages.error(request, "Please fix the errors below.")
+
+            pw_form = PasswordChangeForm(user=request.user)  # fresh password form
+
+        elif "change_password" in request.POST:
+            # Changing password
+            pw_form = PasswordChangeForm(user=request.user, data=request.POST)
+            u_form = UserUpdateForm(instance=request.user)
+            p_form = ProfileUpdateForm(instance=request.user.profile)
+
+            if pw_form.is_valid():
+                user = pw_form.save()
+                update_session_auth_hash(request, user)  # keeps user logged in
+                messages.success(request, "Your password has been updated!")
+                return redirect("studybuddy:edit_profile")
+            else:
+                messages.error(request, "Please fix the errors below.")
+    else:
+        u_form = UserUpdateForm(instance=request.user)
+        p_form = ProfileUpdateForm(instance=request.user.profile)
+        pw_form = PasswordChangeForm(user=request.user)
+
+    context = {"u_form": u_form, "p_form": p_form, "pw_form": pw_form}
+    return render(request, "studybuddy/edit_profile.html", context)
+
+
+@login_required
+def profile(request):
+    return render(request, "studybuddy/profile.html", {"user": request.user})

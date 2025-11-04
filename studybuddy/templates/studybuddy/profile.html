@@ -1,0 +1,94 @@
+{% extends 'studybuddy/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="profile-container">
+    <h2>{{ user.username }}'s Profile</h2>
+    <hr>
+
+    <!-- User info -->
+    <div class="profile-info">
+        <p><strong>Username:</strong> {{ user.username }}</p>
+        <p><strong>First Name:</strong> {{ user.first_name }}</p>
+        <p><strong>Last Name:</strong> {{ user.last_name }}</p>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Bio:</strong> {{ user.profile.bio }}</p>
+        <p><strong>Phone Number:</strong> {{ user.profile.phone_number }}</p>
+        <p><strong>Location:</strong> {{ user.profile.location }}</p>
+    </div>
+
+    <div class="profile-actions">
+        <a href="{% url 'studybuddy:edit_profile' %}" class="btn-edit">Edit Profile</a>
+    </div>
+</div>
+
+<style>
+.profile-container {
+    max-width: 650px;
+    margin: 40px auto;
+    padding: 30px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border: 1px solid #ddd;
+}
+
+.profile-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.profile-info p {
+    font-size: 16px;
+    margin: 10px 0;
+}
+
+.profile-info strong {
+    color: #555;
+}
+
+.profile-actions {
+    margin-top: 25px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.btn-edit,
+.btn-password {
+    padding: 8px 22px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: white;
+    font-weight: 500;
+    margin-top: 10px;
+}
+
+.btn-edit {
+    background: #007bff;
+}
+
+.btn-edit:hover {
+    background: #0056b3;
+}
+
+.btn-password {
+    background: #17a2b8;
+}
+
+.btn-password:hover {
+    background: #117a8b;
+}
+
+@media (max-width: 500px) {
+    .profile-actions {
+        flex-direction: column;
+    }
+    .btn-edit, .btn-password {
+        width: 100%;
+        text-align: center;
+    }
+}
+</style>
+{% endblock %}

@@ -10,5 +10,7 @@ urlpatterns = [
         "studybuddy/",
         include(("studybuddy.urls", "studybuddy"), namespace="studybuddy"),
     ),
+    # Include built-in auth views for password change, reset, login, logout, etc.
+    path("accounts/", include("django.contrib.auth.urls")),
     path("admin/", admin.site.urls),
 ]

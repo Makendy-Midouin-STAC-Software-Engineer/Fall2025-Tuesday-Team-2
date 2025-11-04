@@ -1,32 +1,37 @@
 from django import forms
 from django.contrib.auth.models import User
-from django.contrib.auth.forms import UserChangeForm
+from django.contrib.auth.forms import PasswordChangeForm
+from .models import UserProfile
 
 
-class EditProfileForm(UserChangeForm):
-    """Custom form for editing user profile - excludes email field"""
+class UserUpdateForm(forms.ModelForm):
+    username = forms.CharField(max_length=150, required=True, label="Username")
+    first_name = forms.CharField(max_length=30, required=False, label="First Name")
+    last_name = forms.CharField(max_length=30, required=False, label="Last Name")
+    email = forms.EmailField(required=True, label="Email")
 
     class Meta:
         model = User
-        fields = ("username", "first_name", "last_name")
+        fields = ["username", "first_name", "last_name", "email"]
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Remove password field from UserChangeForm
-        if "password" in self.fields:
-            del self.fields["password"]
+    def clean_username(self):
+        username = self.cleaned_data["username"]
+        if User.objects.exclude(pk=self.instance.pk).filter(username=username).exists():
+            raise forms.ValidationError("This username is already taken.")
+        return username
 
-        # Remove email and other unwanted fields
-        fields_to_remove = [
-            "email",
-            "last_login",
-            "date_joined",
-            "is_active",
-            "is_staff",
-            "is_superuser",
-            "groups",
-            "user_permissions",
-        ]
-        for field in fields_to_remove:
-            if field in self.fields:
-                del self.fields[field]
+    def clean_email(self):
+        email = self.cleaned_data["email"]
+        if User.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
+            raise forms.ValidationError("This email is already in use.")
+        return email
+
+
+class ProfileUpdateForm(forms.ModelForm):
+    bio = forms.CharField(widget=forms.Textarea(attrs={"rows": 3}), required=False)
+    phone_number = forms.CharField(max_length=20, required=False)
+    location = forms.CharField(max_length=100, required=False)
+
+    class Meta:
+        model = UserProfile
+        fields = ["bio", "phone_number", "location"]

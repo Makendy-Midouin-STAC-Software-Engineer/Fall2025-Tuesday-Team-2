@@ -18,6 +18,9 @@ urlpatterns = [
         views.password_reset_confirm,
         name="password_reset_confirm",
     ),
+    # Profile URL
+    path("profile/", views.profile, name="profile"),
+    path("profile/edit/", views.edit_profile, name="edit_profile"),
     # Notes URLs
     path("notes/", views.NoteListView.as_view(), name="note_list"),
     path("notes/add/", views.NoteCreateView.as_view(), name="note_add"),

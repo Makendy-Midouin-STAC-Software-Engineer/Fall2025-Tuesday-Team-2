@@ -18,6 +18,12 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 
+from .forms import UserUpdateForm, ProfileUpdateForm
+
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
+
+
 import uuid
 
 from .models import Note, Room, Message, UserProfile
@@ -419,53 +425,51 @@ def timer_state(request, room_id):
     return JsonResponse(room.get_timer_state())
 
 
-@login_required
-def get_messages(request, room_id):
-    """Get messages for a room in JSON format for real-time chat updates"""
-    room = get_object_or_404(Room, id=room_id)
-    room_messages = room.messages.order_by("timestamp")
-
-    messages_data = []
-    for msg in room_messages:
-        # Send ISO 8601 timestamp for frontend timezone conversion
-        timestamp_iso = msg.timestamp.isoformat()
-        messages_data.append(
-            {
-                "id": msg.id,
-                "user": msg.user.username,
-                "content": msg.content,
-                "timestamp": timestamp_iso,
-                "is_own": msg.user.id == request.user.id,
-            }
-        )
-
-    return JsonResponse({"messages": messages_data})
+# -----------------------------
+# Profile
+# -----------------------------
 
 
 @login_required
-@require_POST
-def send_message(request, room_id):
-    """Send a message via AJAX - returns JSON response"""
-    room = get_object_or_404(Room, id=room_id)
-    content = request.POST.get("content", "").strip()
+def edit_profile(request):
+    if request.method == "POST":
+        if "update_info" in request.POST:
+            # Updating account & profile info
+            u_form = UserUpdateForm(request.POST, instance=request.user)
+            p_form = ProfileUpdateForm(request.POST, instance=request.user.profile)
 
-    if not content:
-        return JsonResponse({"error": "Message content is required"}, status=400)
+            if u_form.is_valid() and p_form.is_valid():
+                u_form.save()
+                p_form.save()
+                messages.success(request, "Your profile has been updated!")
+                return redirect("studybuddy:edit_profile")
+            else:
+                messages.error(request, "Please fix the errors below.")
 
-    message = Message.objects.create(room=room, user=request.user, content=content)
+            pw_form = PasswordChangeForm(user=request.user)  # fresh password form
 
-    # Send ISO 8601 timestamp for frontend timezone conversion
-    timestamp_iso = message.timestamp.isoformat()
+        elif "change_password" in request.POST:
+            # Changing password
+            pw_form = PasswordChangeForm(user=request.user, data=request.POST)
+            u_form = UserUpdateForm(instance=request.user)
+            p_form = ProfileUpdateForm(instance=request.user.profile)
 
-    return JsonResponse(
-        {
-            "success": True,
-            "message": {
-                "id": message.id,
-                "user": message.user.username,
-                "content": message.content,
-                "timestamp": timestamp_iso,
-                "is_own": True,
-            },
-        }
-    )
+            if pw_form.is_valid():
+                user = pw_form.save()
+                update_session_auth_hash(request, user)  # keeps user logged in
+                messages.success(request, "Your password has been updated!")
+                return redirect("studybuddy:edit_profile")
+            else:
+                messages.error(request, "Please fix the errors below.")
+    else:
+        u_form = UserUpdateForm(instance=request.user)
+        p_form = ProfileUpdateForm(instance=request.user.profile)
+        pw_form = PasswordChangeForm(user=request.user)
+
+    context = {"u_form": u_form, "p_form": p_form, "pw_form": pw_form}
+    return render(request, "studybuddy/edit_profile.html", context)
+
+
+@login_required
+def profile(request):
+    return render(request, "studybuddy/profile.html", {"user": request.user})

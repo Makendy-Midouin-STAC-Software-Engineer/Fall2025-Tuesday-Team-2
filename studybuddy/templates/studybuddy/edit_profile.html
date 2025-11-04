@@ -1,0 +1,62 @@
+{% extends 'studybuddy/base.html' %}
+{% block title %}Edit Profile{% endblock %}
+{% block content %}
+<h2>Edit Profile</h2>
+<form method="POST" style="max-width: 500px;">
+    {% csrf_token %}
+    <div style="margin-bottom: 15px;">
+        <label for="{{ form.username.id_for_label }}" style="display: block; margin-bottom: 5px; font-weight: bold;">Username:</label>
+        {{ form.username }}
+        {% if form.username.errors %}
+            <div style="color: #dc2626; font-size: 14px; margin-top: 5px;">
+                {{ form.username.errors }}
+            </div>
+        {% endif %}
+    </div>
+    
+    <div style="margin-bottom: 15px;">
+        <label for="{{ form.first_name.id_for_label }}" style="display: block; margin-bottom: 5px; font-weight: bold;">First Name:</label>
+        {{ form.first_name }}
+        {% if form.first_name.errors %}
+            <div style="color: #dc2626; font-size: 14px; margin-top: 5px;">
+                {{ form.first_name.errors }}
+            </div>
+        {% endif %}
+    </div>
+    
+    <div style="margin-bottom: 15px;">
+        <label for="{{ form.last_name.id_for_label }}" style="display: block; margin-bottom: 5px; font-weight: bold;">Last Name:</label>
+        {{ form.last_name }}
+        {% if form.last_name.errors %}
+            <div style="color: #dc2626; font-size: 14px; margin-top: 5px;">
+                {{ form.last_name.errors }}
+            </div>
+        {% endif %}
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <button type="submit" style="background-color: #2563eb; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-right: 10px;">
+            Save Changes
+        </button>
+        <a href="{% url 'studybuddy:home' %}" style="display: inline-block; background-color: #6b7280; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-size: 16px;">
+            Cancel
+        </a>
+    </div>
+</form>
+
+<style>
+    input[type="text"] {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 16px;
+        box-sizing: border-box;
+    }
+    input[type="text"]:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+</style>
+{% endblock %}

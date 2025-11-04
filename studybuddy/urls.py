@@ -6,6 +6,7 @@ app_name = "studybuddy"
 
 urlpatterns = [
     path("", views.home_view, name="home"),  # Home page
+    path("edit-profile/", views.edit_profile, name="edit_profile"),
     path("register/", views.custom_register, name="register"),
     path("login/", views.custom_login, name="login"),
     path("logout/", views.custom_logout, name="logout"),
@@ -34,4 +35,7 @@ urlpatterns = [
     path("room/<int:room_id>/timer/pause/", views.timer_pause, name="timer_pause"),
     path("room/<int:room_id>/timer/reset/", views.timer_reset, name="timer_reset"),
     path("room/<int:room_id>/timer/state/", views.timer_state, name="timer_state"),
+    # Real-time chat API
+    path("room/<int:room_id>/messages/", views.get_messages, name="get_messages"),
+    path("room/<int:room_id>/send-message/", views.send_message, name="send_message"),
 ]

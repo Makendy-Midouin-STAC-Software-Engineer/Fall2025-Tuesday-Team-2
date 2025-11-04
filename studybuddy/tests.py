@@ -82,19 +82,21 @@ class PasswordResetTests(TestCase):
             )
         )
         self.assertEqual(response.status_code, 200)  # Shows invalid reset page
-    
+
     def test_password_reset_get(self):
         """Test password reset GET"""
         response = self.client.get(reverse("studybuddy:password_reset_request"))
         self.assertEqual(response.status_code, 200)
-    
+
     def test_password_reset_user_not_found(self):
         """Test password reset with non-existent email"""
         response = self.client.post(
             reverse("studybuddy:password_reset_request"),
-            {"email": "nonexistent@example.com"}
+            {"email": "nonexistent@example.com"},
         )
-        self.assertEqual(response.status_code, 302)  # Redirects even when email not found
+        self.assertEqual(
+            response.status_code, 302
+        )  # Redirects even when email not found
 
 
 # ------------------------
@@ -197,7 +199,7 @@ class TimerTests(TestCase):
         state = response.json()
         self.assertFalse(state["is_running"])
         self.assertEqual(state["time_left"], 1500)
-    
+
     def test_timer_state_view(self):
         """Test getting timer state"""
         response = self.client.get(
@@ -208,24 +210,24 @@ class TimerTests(TestCase):
         self.assertIn("is_running", state)
         self.assertIn("time_left", state)
         self.assertIn("mode", state)
-    
+
     def test_timer_get_state(self):
         """Test Room.get_timer_state() method when timer is running"""
         self.room.timer_is_running = True
         self.room.timer_started_at = timezone.now() - timedelta(seconds=60)
         self.room.save()
-        
+
         state = self.room.get_timer_state()
         self.assertTrue(state["is_running"])
         self.assertGreater(state["time_left"], 0)
         self.assertLessEqual(state["time_left"], self.room.timer_duration)
-    
+
     def test_timer_get_state_expired(self):
         """Test timer auto-resets when expired"""
         self.room.timer_is_running = True
         self.room.timer_started_at = timezone.now() - timedelta(seconds=2000)
         self.room.save()
-        
+
         state = self.room.get_timer_state()
         self.assertFalse(state["is_running"])
         self.assertEqual(state["time_left"], self.room.timer_duration)
@@ -244,26 +246,26 @@ class PermissionTests(TestCase):
     def test_non_creator_cannot_control_timer(self):
         """Test that non-creators cannot control timer"""
         self.client.login(username="user2", password="password123")
-        
+
         response = self.client.post(
             reverse("studybuddy:timer_start", kwargs={"room_id": self.room.id})
         )
         self.assertEqual(response.status_code, 403)
-        
+
         response = self.client.post(
             reverse("studybuddy:timer_pause", kwargs={"room_id": self.room.id})
         )
         self.assertEqual(response.status_code, 403)
-        
+
         response = self.client.post(
             reverse("studybuddy:timer_reset", kwargs={"room_id": self.room.id})
         )
         self.assertEqual(response.status_code, 403)
-    
+
     def test_non_creator_can_view_timer(self):
         """Test that non-creators can view timer state"""
         self.client.login(username="user2", password="password123")
-        
+
         response = self.client.get(
             reverse("studybuddy:timer_state", kwargs={"room_id": self.room.id})
         )
@@ -281,15 +283,13 @@ class ModelReprTests(TestCase):
     def test_user_profile_str(self):
         profile = UserProfile.objects.get(user=self.user)
         self.assertEqual(str(profile), "testuser's profile")
-    
+
     def test_room_str(self):
         self.assertEqual(str(self.room), "TestRoom")
-    
+
     def test_message_str(self):
         message = Message.objects.create(
-            room=self.room,
-            user=self.user,
-            content="Test message content"
+            room=self.room, user=self.user, content="Test message content"
         )
         self.assertEqual(str(message), "testuser: Test message content")
 
@@ -306,57 +306,63 @@ class AdditionalViewTests(TestCase):
     def test_home_view_not_authenticated(self):
         """Test home view for non-authenticated users"""
         self.client.logout()
-        response = self.client.get('/')
+        response = self.client.get("/")
         self.assertIn(response.status_code, [200, 302])  # Can redirect or show page
-    
+
     def test_note_list_view(self):
         """Test note list view"""
         response = self.client.get(reverse("studybuddy:note_list"))
         self.assertEqual(response.status_code, 200)
-    
+
     def test_note_create_get(self):
         """Test note create GET"""
         response = self.client.get(reverse("studybuddy:note_add"))
         self.assertEqual(response.status_code, 200)
-    
+
     def test_note_update_get(self):
         """Test note update GET"""
         note = Note.objects.create(user=self.user, title="Test", content="Content")
-        response = self.client.get(reverse("studybuddy:note_edit", kwargs={"pk": note.pk}))
+        response = self.client.get(
+            reverse("studybuddy:note_edit", kwargs={"pk": note.pk})
+        )
         self.assertEqual(response.status_code, 200)
-    
+
     def test_note_delete_get(self):
         """Test note delete confirmation GET"""
         note = Note.objects.create(user=self.user, title="Test", content="Content")
-        response = self.client.get(reverse("studybuddy:note_delete", kwargs={"pk": note.pk}))
+        response = self.client.get(
+            reverse("studybuddy:note_delete", kwargs={"pk": note.pk})
+        )
         self.assertEqual(response.status_code, 200)
-    
+
     def test_rooms_view_get(self):
         """Test rooms list GET"""
         response = self.client.get(reverse("studybuddy:rooms"))
         self.assertEqual(response.status_code, 200)
-    
+
     def test_room_delete_get(self):
         """Test room delete confirmation GET"""
         room = Room.objects.create(name="TestRoom", created_by=self.user)
-        response = self.client.get(reverse("studybuddy:room_delete", kwargs={"room_id": room.id}))
+        response = self.client.get(
+            reverse("studybuddy:room_delete", kwargs={"room_id": room.id})
+        )
         self.assertEqual(response.status_code, 200)
-    
+
     def test_rooms_create_room(self):
         """Test creating a room via POST"""
         response = self.client.post(
             reverse("studybuddy:rooms"),
-            {"name": "New Room", "description": "New Description"}
+            {"name": "New Room", "description": "New Description"},
         )
         self.assertEqual(response.status_code, 302)  # Redirects after creation
         self.assertTrue(Room.objects.filter(name="New Room").exists())
-    
+
     def test_room_detail_send_message(self):
         """Test sending a message in room"""
         room = Room.objects.create(name="TestRoom", created_by=self.user)
         response = self.client.post(
             reverse("studybuddy:room_detail", kwargs={"room_id": room.id}),
-            {"content": "Hello World"}
+            {"content": "Hello World"},
         )
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Message.objects.filter(content="Hello World").exists())
@@ -372,13 +378,13 @@ class UserProfileModelTests(TestCase):
     def test_user_profile_exists(self):
         """Test that UserProfile is created when user is created"""
         self.assertTrue(UserProfile.objects.filter(user=self.user).exists())
-    
+
     def test_user_profile_default_email_verified(self):
         """Test UserProfile default values"""
         profile = UserProfile.objects.get(user=self.user)
         self.assertFalse(profile.email_verified)
         self.assertIsNotNone(profile.verification_token)
-    
+
     def test_token_validity(self):
         """Test token validity check"""
         profile = UserProfile.objects.get(user=self.user)
@@ -406,7 +412,7 @@ class ErrorHandlingTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 200)  # Should show error
-    
+
     def test_register_passwords_mismatch(self):
         """Test registration with mismatched passwords"""
         response = self.client.post(
@@ -418,23 +424,137 @@ class ErrorHandlingTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 200)  # Should show error
-    
+
     def test_login_invalid_credentials(self):
         """Test login with wrong password"""
         response = self.client.post(
             reverse("studybuddy:login"),
-            {"username": "testuser", "password": "wrongpassword"}
+            {"username": "testuser", "password": "wrongpassword"},
         )
         self.assertEqual(response.status_code, 200)  # Should show error
-    
+
     def test_note_update_other_user_note(self):
         """Test that users can't update other users' notes"""
         other_user = create_user(username="otheruser", password="password123")
-        other_note = Note.objects.create(user=other_user, title="Other", content="Content")
-        
+        other_note = Note.objects.create(
+            user=other_user, title="Other", content="Content"
+        )
+
         response = self.client.post(
             reverse("studybuddy:note_edit", kwargs={"pk": other_note.pk}),
-            {"title": "Hacked", "content": "Bad"}
+            {"title": "Hacked", "content": "Bad"},
         )
         # Should either redirect or show error
         self.assertIn(response.status_code, [200, 302, 403])
+
+
+# ------------------------
+# Edit Profile tests
+# ------------------------
+class EditProfileTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = create_user()
+        self.client.login(username="testuser", password="password123")
+
+    def test_edit_profile_get(self):
+        """Test edit profile GET request"""
+        response = self.client.get(reverse("studybuddy:edit_profile"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Edit Profile")
+
+    def test_edit_profile_update_username(self):
+        """Test updating username via edit profile"""
+        response = self.client.post(
+            reverse("studybuddy:edit_profile"),
+            {"username": "newusername", "first_name": "", "last_name": ""}
+        )
+        self.assertEqual(response.status_code, 302)  # Redirect on success
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, "newusername")
+
+    def test_edit_profile_update_first_last_name(self):
+        """Test updating first_name and last_name"""
+        response = self.client.post(
+            reverse("studybuddy:edit_profile"),
+            {"username": "testuser", "first_name": "John", "last_name": "Doe"}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name, "John")
+        self.assertEqual(self.user.last_name, "Doe")
+
+    def test_edit_profile_requires_login(self):
+        """Test that edit profile requires authentication"""
+        self.client.logout()
+        response = self.client.get(reverse("studybuddy:edit_profile"))
+        self.assertEqual(response.status_code, 302)  # Redirects to login
+
+
+# ------------------------
+# Real-time chat tests
+# ------------------------
+class RealTimeChatTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = create_user()
+        self.client.login(username="testuser", password="password123")
+        self.room = Room.objects.create(name="TestRoom", created_by=self.user)
+
+    def test_get_messages_api(self):
+        """Test get_messages API endpoint returns JSON"""
+        # Create a message
+        Message.objects.create(
+            room=self.room, user=self.user, content="Hello World"
+        )
+        
+        response = self.client.get(
+            reverse("studybuddy:get_messages", kwargs={"room_id": self.room.id})
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("messages", data)
+        self.assertEqual(len(data["messages"]), 1)
+        self.assertEqual(data["messages"][0]["content"], "Hello World")
+        self.assertEqual(data["messages"][0]["user"], "testuser")
+        self.assertTrue(data["messages"][0]["is_own"])
+
+    def test_send_message_api(self):
+        """Test send_message API endpoint via AJAX"""
+        response = self.client.post(
+            reverse("studybuddy:send_message", kwargs={"room_id": self.room.id}),
+            {"content": "Test message"}
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertEqual(data["message"]["content"], "Test message")
+        self.assertTrue(Message.objects.filter(content="Test message").exists())
+
+    def test_send_message_empty_content(self):
+        """Test send_message with empty content returns error"""
+        response = self.client.post(
+            reverse("studybuddy:send_message", kwargs={"room_id": self.room.id}),
+            {"content": ""}
+        )
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertIn("error", data)
+
+    def test_get_messages_multiple_messages(self):
+        """Test get_messages with multiple messages"""
+        other_user = create_user(username="otheruser", password="password123")
+        Message.objects.create(room=self.room, user=self.user, content="Message 1")
+        Message.objects.create(room=self.room, user=other_user, content="Message 2")
+        Message.objects.create(room=self.room, user=self.user, content="Message 3")
+        
+        response = self.client.get(
+            reverse("studybuddy:get_messages", kwargs={"room_id": self.room.id})
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data["messages"]), 3)
+        # Verify is_own is correct
+        self.assertTrue(data["messages"][0]["is_own"])
+        self.assertFalse(data["messages"][1]["is_own"])
+        self.assertTrue(data["messages"][2]["is_own"])

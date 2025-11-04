@@ -416,10 +416,34 @@ def send_message(request, room_id):
 
 @login_required
 def edit_profile(request):
+    # Initialize forms (will be overwritten if POST)
+    u_form = UserUpdateForm(instance=request.user)
+    p_form = ProfileUpdateForm(instance=request.user.profile)
+    pw_form = PasswordChangeForm(user=request.user)
+
     if request.method == "POST":
-        if "update_info" in request.POST:
+        # Check if this is a profile update (has profile fields or update_info button)
+        profile_fields = {
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            "bio",
+            "phone_number",
+            "location",
+        }
+        has_profile_data = any(field in request.POST for field in profile_fields)
+
+        if "update_info" in request.POST or (
+            has_profile_data and "change_password" not in request.POST
+        ):
             # Updating account & profile info
-            u_form = UserUpdateForm(request.POST, instance=request.user)
+            # Ensure email is included if not in POST (use existing email)
+            post_data = request.POST.copy()
+            if "email" not in post_data and request.user.email:
+                post_data["email"] = request.user.email
+
+            u_form = UserUpdateForm(post_data, instance=request.user)
             p_form = ProfileUpdateForm(request.POST, instance=request.user.profile)
 
             if u_form.is_valid() and p_form.is_valid():
@@ -445,10 +469,6 @@ def edit_profile(request):
                 return redirect("studybuddy:edit_profile")
             else:
                 messages.error(request, "Please fix the errors below.")
-    else:
-        u_form = UserUpdateForm(instance=request.user)
-        p_form = ProfileUpdateForm(instance=request.user.profile)
-        pw_form = PasswordChangeForm(user=request.user)
 
     context = {"u_form": u_form, "p_form": p_form, "pw_form": pw_form}
     return render(request, "studybuddy/edit_profile.html", context)

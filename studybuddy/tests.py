@@ -446,3 +446,113 @@ class ErrorHandlingTests(TestCase):
         )
         # Should either redirect or show error
         self.assertIn(response.status_code, [200, 302, 403])
+
+
+# ------------------------
+# Edit Profile tests
+# ------------------------
+class EditProfileTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = create_user()
+        self.client.login(username="testuser", password="password123")
+
+    def test_edit_profile_get(self):
+        """Test edit profile GET request"""
+        response = self.client.get(reverse("studybuddy:edit_profile"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Edit Profile")
+
+    def test_edit_profile_update_username(self):
+        """Test updating username via edit profile"""
+        response = self.client.post(
+            reverse("studybuddy:edit_profile"),
+            {"username": "newusername", "first_name": "", "last_name": ""},
+        )
+        self.assertEqual(response.status_code, 302)  # Redirect on success
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, "newusername")
+
+    def test_edit_profile_update_first_last_name(self):
+        """Test updating first_name and last_name"""
+        response = self.client.post(
+            reverse("studybuddy:edit_profile"),
+            {"username": "testuser", "first_name": "John", "last_name": "Doe"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name, "John")
+        self.assertEqual(self.user.last_name, "Doe")
+
+    def test_edit_profile_requires_login(self):
+        """Test that edit profile requires authentication"""
+        self.client.logout()
+        response = self.client.get(reverse("studybuddy:edit_profile"))
+        self.assertEqual(response.status_code, 302)  # Redirects to login
+
+
+# ------------------------
+# Real-time chat tests
+# ------------------------
+class RealTimeChatTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = create_user()
+        self.client.login(username="testuser", password="password123")
+        self.room = Room.objects.create(name="TestRoom", created_by=self.user)
+
+    def test_get_messages_api(self):
+        """Test get_messages API endpoint returns JSON"""
+        # Create a message
+        Message.objects.create(room=self.room, user=self.user, content="Hello World")
+
+        response = self.client.get(
+            reverse("studybuddy:get_messages", kwargs={"room_id": self.room.id})
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("messages", data)
+        self.assertEqual(len(data["messages"]), 1)
+        self.assertEqual(data["messages"][0]["content"], "Hello World")
+        self.assertEqual(data["messages"][0]["user"], "testuser")
+        self.assertTrue(data["messages"][0]["is_own"])
+
+    def test_send_message_api(self):
+        """Test send_message API endpoint via AJAX"""
+        response = self.client.post(
+            reverse("studybuddy:send_message", kwargs={"room_id": self.room.id}),
+            {"content": "Test message"},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertEqual(data["message"]["content"], "Test message")
+        self.assertTrue(Message.objects.filter(content="Test message").exists())
+
+    def test_send_message_empty_content(self):
+        """Test send_message with empty content returns error"""
+        response = self.client.post(
+            reverse("studybuddy:send_message", kwargs={"room_id": self.room.id}),
+            {"content": ""},
+        )
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertIn("error", data)
+
+    def test_get_messages_multiple_messages(self):
+        """Test get_messages with multiple messages"""
+        other_user = create_user(username="otheruser", password="password123")
+        Message.objects.create(room=self.room, user=self.user, content="Message 1")
+        Message.objects.create(room=self.room, user=other_user, content="Message 2")
+        Message.objects.create(room=self.room, user=self.user, content="Message 3")
+
+        response = self.client.get(
+            reverse("studybuddy:get_messages", kwargs={"room_id": self.room.id})
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data["messages"]), 3)
+        # Verify is_own is correct
+        self.assertTrue(data["messages"][0]["is_own"])
+        self.assertFalse(data["messages"][1]["is_own"])
+        self.assertTrue(data["messages"][2]["is_own"])

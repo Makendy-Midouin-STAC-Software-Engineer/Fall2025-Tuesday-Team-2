@@ -88,12 +88,23 @@ TEMPLATES = [
 WSGI_APPLICATION = "mysite.wsgi.application"
 
 # Database
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+# Use /tmp on Elastic Beanstalk (read-write), fallback to BASE_DIR for local dev
+if os.environ.get("AWS_EXECUTION_ENV") or os.path.exists("/tmp"):
+    # On Elastic Beanstalk or Linux - use /tmp directory which is writable
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": "/tmp/db.sqlite3",
+        }
     }
-}
+else:
+    # Local development - use BASE_DIR
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

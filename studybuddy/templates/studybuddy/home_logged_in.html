@@ -33,10 +33,25 @@
         .logout-btn:hover {
             background-color: #b91c1c;
         }
+        .edit-profile-btn {
+            background-color: #16a34a;
+        }
+        .edit-profile-btn:hover {
+            background-color: #15803d;
+        }
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
-    <h1>Welcome, {{ username }}!</h1>
+    <div class="header-section">
+        <h1>Welcome, {{ username }}!</h1>
+        <a href="{% url 'studybuddy:edit_profile' %}" class="edit-profile-btn">Edit Profile</a>
+    </div>
     <p>Choose a feature to get started:</p>
 
     <div class="feature-card">

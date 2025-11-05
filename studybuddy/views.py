@@ -270,10 +270,20 @@ def message_delete(request, message_id):
     room_id = message.room.id
 
     if message.user != request.user:
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse(
+                {"error": "You don't have permission to delete this message."},
+                status=403,
+            )
         messages.error(request, "You don't have permission to delete this message.")
         return redirect("studybuddy:room_detail", room_id=room_id)
 
     message.delete()
+
+    # Return JSON response for AJAX requests
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse({"success": True})
+
     messages.success(request, "Message deleted successfully.")
     return redirect("studybuddy:room_detail", room_id=room_id)
 
@@ -347,6 +357,58 @@ def timer_state(request, room_id):
     return JsonResponse(room.get_timer_state())
 
 
+@login_required
+def get_messages(request, room_id):
+    """Get messages for a room in JSON format for real-time chat updates"""
+    room = get_object_or_404(Room, id=room_id)
+    room_messages = room.messages.order_by("timestamp")
+
+    messages_data = []
+    for msg in room_messages:
+        # Send ISO 8601 timestamp for frontend timezone conversion
+        timestamp_iso = msg.timestamp.isoformat()
+        messages_data.append(
+            {
+                "id": msg.id,
+                "user": msg.user.username,
+                "content": msg.content,
+                "timestamp": timestamp_iso,
+                "is_own": msg.user.id == request.user.id,
+            }
+        )
+
+    return JsonResponse({"messages": messages_data})
+
+
+@login_required
+@require_POST
+def send_message(request, room_id):
+    """Send a message via AJAX - returns JSON response"""
+    room = get_object_or_404(Room, id=room_id)
+    content = request.POST.get("content", "").strip()
+
+    if not content:
+        return JsonResponse({"error": "Message content is required"}, status=400)
+
+    message = Message.objects.create(room=room, user=request.user, content=content)
+
+    # Send ISO 8601 timestamp for frontend timezone conversion
+    timestamp_iso = message.timestamp.isoformat()
+
+    return JsonResponse(
+        {
+            "success": True,
+            "message": {
+                "id": message.id,
+                "user": message.user.username,
+                "content": message.content,
+                "timestamp": timestamp_iso,
+                "is_own": True,
+            },
+        }
+    )
+
+
 # -----------------------------
 # Profile
 # -----------------------------
@@ -354,10 +416,34 @@ def timer_state(request, room_id):
 
 @login_required
 def edit_profile(request):
+    # Initialize forms (will be overwritten if POST)
+    u_form = UserUpdateForm(instance=request.user)
+    p_form = ProfileUpdateForm(instance=request.user.profile)
+    pw_form = PasswordChangeForm(user=request.user)
+
     if request.method == "POST":
-        if "update_info" in request.POST:
+        # Check if this is a profile update (has profile fields or update_info button)
+        profile_fields = {
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            "bio",
+            "phone_number",
+            "location",
+        }
+        has_profile_data = any(field in request.POST for field in profile_fields)
+
+        if "update_info" in request.POST or (
+            has_profile_data and "change_password" not in request.POST
+        ):
             # Updating account & profile info
-            u_form = UserUpdateForm(request.POST, instance=request.user)
+            # Ensure email is included if not in POST (use existing email)
+            post_data = request.POST.copy()
+            if "email" not in post_data and request.user.email:
+                post_data["email"] = request.user.email
+
+            u_form = UserUpdateForm(post_data, instance=request.user)
             p_form = ProfileUpdateForm(request.POST, instance=request.user.profile)
 
             if u_form.is_valid() and p_form.is_valid():
@@ -383,10 +469,6 @@ def edit_profile(request):
                 return redirect("studybuddy:edit_profile")
             else:
                 messages.error(request, "Please fix the errors below.")
-    else:
-        u_form = UserUpdateForm(instance=request.user)
-        p_form = ProfileUpdateForm(instance=request.user.profile)
-        pw_form = PasswordChangeForm(user=request.user)
 
     context = {"u_form": u_form, "p_form": p_form, "pw_form": pw_form}
     return render(request, "studybuddy/edit_profile.html", context)

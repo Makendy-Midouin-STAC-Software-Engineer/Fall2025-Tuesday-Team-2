@@ -1,6 +1,20 @@
-.eb-virt
-.env
-.venv
+# Ignore local environment folders
+.venv/
 env/
-venv/
 eb-virt/
+.eb-virt/
+__pycache__/
+*.pyc
+
+# Ignore database and env files
+db.sqlite3
+.env
+
+# Ignore git and docs
+.git/
+.github/
+README.md
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db

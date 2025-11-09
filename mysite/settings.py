@@ -28,7 +28,7 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 # Get allowed hosts from environment variable or use defaults
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else [
-    'django-env.eba-3hna7m4m.us-east-1.elasticbeanstalk.com',
+    'polls-env.eba-r54pjkkv.us-east-1.elasticbeanstalk.com',
     '.elasticbeanstalk.com',  # Allow any EB environment
     '*.elasticbeanstalk.com',
     'localhost',
@@ -38,7 +38,8 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get
 
 # In production, allow all hosts if DEBUG is False (AWS specific)
 if not DEBUG:
-    ALLOWED_HOSTS = ['*']  # AWS EB handles the host validation
+    ALLOWED_HOSTS = ['44.220.150.54',
+    'polls-env.eba-r54pjkkv.us-east-1.elasticbeanstalk.com',]  # AWS EB handles the host validation
 
 
 # Application definition

@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 import uuid
+import string
+import random
 from django.utils import timezone
 from datetime import timedelta
 
@@ -35,7 +37,11 @@ class Room(models.Model):
     description = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='rooms')
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
+    # NEW: Private Room Settings
+    is_private = models.BooleanField(default=False)
+    join_code = models.CharField(max_length=8, blank=True, null=True, unique=True)
+
     # Pomodoro Timer Fields (server-side, synced across all users)
     timer_started_at = models.DateTimeField(null=True, blank=True)
     timer_duration = models.IntegerField(default=1500)  # 25 minutes in seconds
@@ -44,7 +50,17 @@ class Room(models.Model):
 
     def __str__(self):
         return self.name
-    
+
+    def save(self, *args, **kwargs):
+        """Auto-generate join code for private rooms"""
+        import random, string
+        if self.is_private and not self.join_code:
+            self.join_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        elif not self.is_private:
+            # Clear code if room is made public
+            self.join_code = None
+        super().save(*args, **kwargs)
+
     def get_timer_state(self):
         """Get current timer state for all users in the room"""
         if not self.timer_is_running:

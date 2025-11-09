@@ -24,7 +24,8 @@ urlpatterns = [
     path("room/<int:room_id>/", views.room_detail, name='room_detail'),
     path("room/<int:room_id>/delete/", views.room_delete, name='room_delete'),
     path("message/<int:message_id>/delete/", views.message_delete, name='message_delete'),
-    
+    path('join-room/', views.join_room_by_code, name='join_room_by_code'),
+
     # Pomodoro Timer URLs
     path("room/<int:room_id>/timer/start/", views.timer_start, name='timer_start'),
     path("room/<int:room_id>/timer/pause/", views.timer_pause, name='timer_pause'),

@@ -1,36 +1,78 @@
 {% extends 'studybuddy/base.html' %}
 {% block title %}Study Rooms{% endblock %}
 {% block content %}
-<h1>Study Rooms</h1>
+<h1 style="text-align:center;margin-bottom:30px;">Study Rooms</h1>
 
+<!-- Create Room -->
 <form method="POST" style="text-align:center;margin-bottom:30px;">
     {% csrf_token %}
-    <input type="text" name="name" placeholder="Room name" required style="padding:10px;width:40%;border-radius:8px;border:1px solid #ccc;margin-right:10px;">
-    <textarea name="description" placeholder="Description (optional)" style="padding:10px;width:40%;border-radius:8px;border:1px solid #ccc;"></textarea>
-    <button type="submit" style="background-color:#16a34a;color:white;padding:10px 20px;border:none;border-radius:8px;margin-left:10px;cursor:pointer;">Create Room</button>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+        <input type="text" name="name" placeholder="Room name" required 
+               style="padding:10px;width:50%;border-radius:8px;border:1px solid #ccc;">
+        
+        <textarea name="description" placeholder="Description (optional)" 
+                  style="padding:10px;width:50%;border-radius:8px;border:1px solid #ccc;"></textarea>
+
+        <div style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="is_private" name="is_private" 
+                   style="transform:scale(1.3);cursor:pointer;">
+            <label for="is_private" style="font-weight:500;cursor:pointer;">Make this room private 🔒</label>
+        </div>
+
+        <button type="submit" 
+                style="background-color:#16a34a;color:white;padding:10px 20px;
+                       border:none;border-radius:8px;cursor:pointer;font-size:15px;">
+            Create Room
+        </button>
+    </div>
 </form>
 
+<!-- Join Private Room -->
+<form method="POST" style="text-align:center;margin-bottom:40px;">
+    {% csrf_token %}
+    <input type="text" name="join_code" placeholder="Enter room code to join" required 
+           style="padding:10px;width:40%;border-radius:8px;border:1px solid #ccc;margin-right:10px;">
+    <button type="submit" 
+            style="background-color:#2563eb;color:white;padding:10px 20px;
+                   border:none;border-radius:8px;cursor:pointer;">
+        Join Room
+    </button>
+</form>
+
+<!-- Room List -->
 {% for room in rooms %}
-    <div style="background-color:#e5e7eb;padding:15px;border-radius:10px;margin-bottom:15px;display:flex;justify-content:space-between;align-items:center;">
+    {% if not room.is_private or room.created_by == request.user %}
+    <div style="background-color:#e5e7eb;padding:15px;border-radius:10px;
+                margin-bottom:15px;display:flex;justify-content:space-between;align-items:center;">
         <div style="flex:1;">
-            <a href="{% url 'studybuddy:room_detail' room.id %}" style="color:#2563eb;font-weight:bold;font-size:18px;text-decoration:none;">{{ room.name }}</a><br>
-            <span style="color:#555;font-size:0.9em;">Created by: {{ room.created_by.username }} | {{ room.created_at|date:"M d, Y" }}</span><br>
+            <a href="{% url 'studybuddy:room_detail' room.id %}" 
+               style="color:#2563eb;font-weight:bold;font-size:18px;text-decoration:none;">
+               {{ room.name }}
+            </a><br>
+            <span style="color:#555;font-size:0.9em;">
+                Created by: {{ room.created_by.username }} | {{ room.created_at|date:"M d, Y" }}
+            </span><br>
             <span style="color:#333;">{{ room.description }}</span>
+            {% if room.is_private %}
+            <div style="margin-top:5px;color:#9333ea;">
+                🔒 Private Room Code: <strong>{{ room.join_code }}</strong>
+            </div>
+            {% endif %}
         </div>
         {% if room.created_by == request.user %}
         <div>
             <a href="{% url 'studybuddy:room_delete' room.id %}" 
-               style="background-color:#dc2626;color:white;padding:8px 16px;border-radius:8px;text-decoration:none;font-size:14px;">
+               style="background-color:#dc2626;color:white;padding:8px 16px;
+                      border-radius:8px;text-decoration:none;font-size:14px;">
                 Delete
             </a>
         </div>
         {% endif %}
     </div>
+    {% endif %}
 {% empty %}
     <div style="background-color:#e5e7eb;padding:15px;border-radius:10px;">
         <p>No rooms yet. Create one above!</p>
     </div>
 {% endfor %}
 {% endblock %}
-
-

@@ -267,6 +267,7 @@ def room_delete(request, room_id):
 def message_delete(request, message_id):
     message = get_object_or_404(Message, id=message_id)
     room_id = message.room.id
+
     if message.user != request.user:
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return JsonResponse(
@@ -295,14 +296,17 @@ def message_delete(request, message_id):
 @require_POST
 def timer_start(request, room_id):
     room = get_object_or_404(Room, id=room_id)
+
     if room.created_by != request.user:
         return JsonResponse(
             {"error": "Only the room creator can control the timer"}, status=403
         )
+
     if not room.timer_is_running:
         room.timer_is_running = True
         room.timer_started_at = timezone.now()
         room.save()
+
     return JsonResponse(room.get_timer_state())
 
 
@@ -310,16 +314,19 @@ def timer_start(request, room_id):
 @require_POST
 def timer_pause(request, room_id):
     room = get_object_or_404(Room, id=room_id)
+
     if room.created_by != request.user:
         return JsonResponse(
             {"error": "Only the room creator can control the timer"}, status=403
         )
+
     if room.timer_is_running:
         elapsed = int((timezone.now() - room.timer_started_at).total_seconds())
         room.timer_duration = max(0, room.timer_duration - elapsed)
         room.timer_is_running = False
         room.timer_started_at = None
         room.save()
+
     return JsonResponse(room.get_timer_state())
 
 
@@ -327,15 +334,18 @@ def timer_pause(request, room_id):
 @require_POST
 def timer_reset(request, room_id):
     room = get_object_or_404(Room, id=room_id)
+
     if room.created_by != request.user:
         return JsonResponse(
             {"error": "Only the room creator can control the timer"}, status=403
         )
+
     room.timer_is_running = False
     room.timer_started_at = None
     room.timer_mode = "work"
     room.timer_duration = 1500
     room.save()
+
     return JsonResponse(room.get_timer_state())
 
 

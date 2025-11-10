@@ -259,23 +259,16 @@ function playNotificationSound() {
     }
 }
 
-<<<<<<< HEAD
-=======
 // Initialize everything when page loads
->>>>>>> 917ee5e0b2b4af0fe752d72232ec6a1f33cc8a53
 window.addEventListener('DOMContentLoaded', () => {
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }
-<<<<<<< HEAD
-    fetchTimerState();
-=======
     
     // Initial timer fetch
     fetchTimerState();
     
     // Poll every second for timer updates
->>>>>>> 917ee5e0b2b4af0fe752d72232ec6a1f33cc8a53
     pollInterval = setInterval(fetchTimerState, 1000);
     
     // Real-time chat initialization

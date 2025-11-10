@@ -49,6 +49,8 @@
                 <p id="no-messages">No messages yet. Start the conversation!</p>
             {% endfor %}
         </div>
+<!-- Error message display -->
+<div id="message-error" style="color:#dc2626;margin-bottom:10px;display:none;"></div>
 
         <form id="message-form" style="display:flex;align-items:center;">
             {% csrf_token %}

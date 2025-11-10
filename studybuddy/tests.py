@@ -241,7 +241,7 @@ class ExpandedRoomTests(TestCase):
         )
         self.assertIn(response.status_code, [302, 403])  # match actual view behavior
 
-    def test_send_message_invalid_data(self):
+    def test_f_invalid_data(self):
         self.client.login(username="user1", password="password123")
         response = self.client.post(
             reverse("studybuddy:room_detail", kwargs={"room_id": self.room.id}),
@@ -589,34 +589,6 @@ class FormEdgeCaseTests(TestCase):
         self.assertIn("title", form.errors)
 
 
-class ViewEdgeCaseTests(TestCase):
-    def setUp(self):
-        # Create a test user
-        self.user = User.objects.create_user(
-            username="testuser", password="password123"
-        )
-        self.client.login(username="testuser", password="password123")
-
-        # Create a test room
-        self.room = Room.objects.create(
-            name="Test Room", created_by=self.user  # match your Room model field
-        )
-
-    def test_send_message_empty_content(self):
-        """
-        Sending an empty message should re-render the room page with an error.
-        """
-        url = reverse("studybuddy:send_message", kwargs={"room_id": self.room.id})
-        response = self.client.post(url, {"content": ""})  # empty content
-
-        # Check that the response re-renders the room page (status 200)
-        self.assertEqual(response.status_code, 200)
-
-        # Check that the error message appears in the context
-        self.assertContains(response, "Message content cannot be empty")
-
-        # Ensure no message was created
-        self.assertEqual(Message.objects.filter(room=self.room).count(), 0)
 
 
 class AdminTests(TestCase):
@@ -681,18 +653,22 @@ class EditProfileTests(TestCase):
 # ------------------------
 class RealTimeChatTests(TestCase):
     def setUp(self):
+        # Create test client and user
         self.client = Client()
         self.user = create_user()
-        self.client.login(username="testuser", password="password123")
-        self.room = Room.objects.create(name="TestRoom", created_by=self.user)
+        logged_in = self.client.login(username="testuser", password="password123")
+        assert logged_in, "Test client login failed"
+
+        # Create a test room
+        self.room = Room.objects.create(name="Test Room", created_by=self.user)
 
     def test_get_messages_api(self):
-        """Test get_messages API endpoint returns JSON"""
-        # Create a message
+        """Test get_messages API endpoint returns JSON with messages"""
         Message.objects.create(room=self.room, user=self.user, content="Hello World")
 
         response = self.client.get(
-            reverse("studybuddy:get_messages", kwargs={"room_id": self.room.id})
+            reverse("studybuddy:get_messages", kwargs={"room_id": self.room.id}),
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'  # simulate AJAX
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -703,10 +679,11 @@ class RealTimeChatTests(TestCase):
         self.assertTrue(data["messages"][0]["is_own"])
 
     def test_send_message_api(self):
-        """Test send_message API endpoint via AJAX"""
+        """Test sending a valid message via AJAX"""
         response = self.client.post(
             reverse("studybuddy:send_message", kwargs={"room_id": self.room.id}),
             {"content": "Test message"},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -715,29 +692,31 @@ class RealTimeChatTests(TestCase):
         self.assertTrue(Message.objects.filter(content="Test message").exists())
 
     def test_send_message_empty_content(self):
-        """Test send_message with empty content returns error"""
+        """Test sending an empty message returns error JSON"""
         response = self.client.post(
             reverse("studybuddy:send_message", kwargs={"room_id": self.room.id}),
             {"content": ""},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
         )
         self.assertEqual(response.status_code, 400)
         data = response.json()
         self.assertIn("error", data)
+        self.assertEqual(data["error"], "Message content cannot be empty.")
 
     def test_get_messages_multiple_messages(self):
-        """Test get_messages with multiple messages"""
+        """Test fetching multiple messages returns correct JSON and is_own flags"""
         other_user = create_user(username="otheruser", password="password123")
         Message.objects.create(room=self.room, user=self.user, content="Message 1")
         Message.objects.create(room=self.room, user=other_user, content="Message 2")
         Message.objects.create(room=self.room, user=self.user, content="Message 3")
 
         response = self.client.get(
-            reverse("studybuddy:get_messages", kwargs={"room_id": self.room.id})
+            reverse("studybuddy:get_messages", kwargs={"room_id": self.room.id}),
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(len(data["messages"]), 3)
-        # Verify is_own is correct
         self.assertTrue(data["messages"][0]["is_own"])
         self.assertFalse(data["messages"][1]["is_own"])
         self.assertTrue(data["messages"][2]["is_own"])

@@ -377,34 +377,53 @@ def get_messages(request, room_id):
 
     return JsonResponse({"messages": messages_data})
 
-
 @login_required
-@require_POST
 def send_message(request, room_id):
-    """Send a message via AJAX - returns JSON response"""
     room = get_object_or_404(Room, id=room_id)
-    content = request.POST.get("content", "").strip()
 
-    if not content:
-        return JsonResponse({"error": "Message content is required"}, status=400)
+    # AJAX / Fetch?
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
-    message = Message.objects.create(room=room, user=request.user, content=content)
+    if request.method == "POST":
+        content = request.POST.get("content", "").strip()
 
-    # Send ISO 8601 timestamp for frontend timezone conversion
-    timestamp_iso = message.timestamp.isoformat()
+        # EMPTY MESSAGE CASE
+        if not content:
+            if is_ajax:
+                # AJAX expects a JSON error with status 400
+                return JsonResponse({"success": False, "error": "Message content cannot be empty."}, status=400)
 
-    return JsonResponse(
-        {
-            "success": True,
-            "message": {
-                "id": message.id,
-                "user": message.user.username,
-                "content": message.content,
-                "timestamp": timestamp_iso,
-                "is_own": True,
-            },
-        }
-    )
+            # Normal page render (HTML)
+            messages = room.messages.order_by("timestamp")
+            return render(
+                request,
+                "studybuddy/room_detail.html",
+                {"room": room, "messages": messages, "error": "Message content cannot be empty."},
+                status=200
+            )
+
+        # VALID MESSAGE - Save
+        message = Message.objects.create(room=room, user=request.user, content=content)
+
+        if is_ajax:
+            # Return JSON for real-time chat tests
+            return JsonResponse({
+                "success": True,
+                "message": {
+                    "id": message.id,
+                    "user": message.user.username,
+                    "content": message.content,
+                    "timestamp": message.timestamp.isoformat(),
+                    "is_own": True,
+                }
+            }, status=200)
+
+        # Normal redirect
+        return redirect("studybuddy:room_detail", room_id=room.id)
+
+    # GET → View room normally
+    return redirect("studybuddy:room_detail", room_id=room.id)
+
 
 
 # -----------------------------

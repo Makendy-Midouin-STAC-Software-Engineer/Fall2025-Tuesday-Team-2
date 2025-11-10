@@ -589,8 +589,6 @@ class FormEdgeCaseTests(TestCase):
         self.assertIn("title", form.errors)
 
 
-
-
 class AdminTests(TestCase):
     def setUp(self):
         self.site = AdminSite()
@@ -668,7 +666,7 @@ class RealTimeChatTests(TestCase):
 
         response = self.client.get(
             reverse("studybuddy:get_messages", kwargs={"room_id": self.room.id}),
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest'  # simulate AJAX
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",  # simulate AJAX
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -683,7 +681,7 @@ class RealTimeChatTests(TestCase):
         response = self.client.post(
             reverse("studybuddy:send_message", kwargs={"room_id": self.room.id}),
             {"content": "Test message"},
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -696,7 +694,7 @@ class RealTimeChatTests(TestCase):
         response = self.client.post(
             reverse("studybuddy:send_message", kwargs={"room_id": self.room.id}),
             {"content": ""},
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
         self.assertEqual(response.status_code, 400)
         data = response.json()
@@ -712,7 +710,7 @@ class RealTimeChatTests(TestCase):
 
         response = self.client.get(
             reverse("studybuddy:get_messages", kwargs={"room_id": self.room.id}),
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
         self.assertEqual(response.status_code, 200)
         data = response.json()

@@ -65,7 +65,7 @@ class RegisterTests(TestCase):
         self.assertIn(
             response.status_code, [200, 302]
         )  # Accept page render or redirect
-    
+
     def test_login_invalid_credentials(self):
         """Invalid login shows template error message"""
         response = self.client.post(
@@ -73,23 +73,31 @@ class RegisterTests(TestCase):
             {"username": self.user.username, "password": "wrongpass"},
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Invalid username or password")  
-    
+        self.assertContains(response, "Invalid username or password")
+
     def test_register_existing_username(self):
         """Trying to register existing username shows error"""
         response = self.client.post(
             reverse("studybuddy:register"),
-            {"username": self.user.username, "password": "password123", "password2": "password123"},
+            {
+                "username": self.user.username,
+                "password": "password123",
+                "password2": "password123",
+            },
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Username already exists") 
+        self.assertContains(response, "Username already exists")
 
     def test_register_password_mismatch(self):
         """Register with mismatched passwords shows error"""
         response = self.client.post(
             reverse("studybuddy:register"),
-            {"username": "uniqueuser", "password": "password123", "password2": "differentpass"},
+            {
+                "username": "uniqueuser",
+                "password": "password123",
+                "password2": "differentpass",
+            },
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Passwords do not match")
@@ -175,7 +183,9 @@ class NoteTests(TestCase):
 
     def test_update_other_user_note_forbidden(self):
         other_user = create_user(username="otheruser")
-        other_note = Note.objects.create(user=other_user, title="Other", content="Other content")
+        other_note = Note.objects.create(
+            user=other_user, title="Other", content="Other content"
+        )
         response = self.client.post(
             reverse("studybuddy:note_edit", kwargs={"pk": other_note.pk}),
             {"title": "Hacked", "content": "Bad"},
@@ -213,6 +223,7 @@ class RoomTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Message.objects.filter(id=msg.id).exists())
 
+
 # ------------------------
 # ExpandedRoomTests fixes
 # ------------------------
@@ -225,7 +236,9 @@ class ExpandedRoomTests(TestCase):
 
     def test_non_creator_cannot_delete_room(self):
         self.client.login(username="user2", password="password123")
-        response = self.client.post(reverse("studybuddy:room_delete", kwargs={"room_id": self.room.id}))
+        response = self.client.post(
+            reverse("studybuddy:room_delete", kwargs={"room_id": self.room.id})
+        )
         self.assertIn(response.status_code, [302, 403])  # match actual view behavior
 
     def test_send_message_invalid_data(self):
@@ -235,6 +248,7 @@ class ExpandedRoomTests(TestCase):
             {"content": ""},  # empty message
         )
         self.assertIn(response.status_code, [200, 302])
+
 
 # ------------------------
 # Pomodoro timer tests
@@ -303,7 +317,7 @@ class TimerTests(TestCase):
         state = self.room.get_timer_state()
         self.assertFalse(state["is_running"])
         self.assertEqual(state["time_left"], self.room.timer_duration)
-    
+
     def test_timer_expired_auto_reset(self):
         self.room.timer_is_running = True
         self.room.timer_started_at = timezone.now() - timedelta(seconds=2000)
@@ -318,6 +332,7 @@ class TimerTests(TestCase):
         self.room.save()
         state = self.room.get_timer_state()
         self.assertTrue("time_left" in state)
+
 
 # ------------------------
 # Permission tests
@@ -477,6 +492,7 @@ class UserProfileModelTests(TestCase):
         # Token should be valid (just created)
         self.assertTrue(profile.is_token_valid())
 
+
 # ------------------------
 # ExpandedUserProfileTests fixes
 # ------------------------
@@ -491,6 +507,7 @@ class ExpandedUserProfileTests(TestCase):
         self.profile.token_created_at = timezone.now() - timedelta(days=2)
         self.profile.save()
         self.assertFalse(self.profile.is_token_valid())
+
 
 # ------------------------
 # Edge cases and error handling
@@ -548,7 +565,6 @@ class ErrorHandlingTests(TestCase):
         self.assertIn(response.status_code, [200, 302, 403])
 
 
-<<<<<<< HEAD
 class FormEdgeCaseTests(TestCase):
     def test_register_form_password_mismatch(self):
         form_data = {
@@ -572,24 +588,26 @@ class FormEdgeCaseTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("title", form.errors)
 
+
 class ViewEdgeCaseTests(TestCase):
     def setUp(self):
         # Create a test user
-        self.user = User.objects.create_user(username="testuser", password="password123")
+        self.user = User.objects.create_user(
+            username="testuser", password="password123"
+        )
         self.client.login(username="testuser", password="password123")
 
         # Create a test room
         self.room = Room.objects.create(
-            name="Test Room",
-            created_by=self.user  # match your Room model field
+            name="Test Room", created_by=self.user  # match your Room model field
         )
 
     def test_send_message_empty_content(self):
         """
         Sending an empty message should re-render the room page with an error.
         """
-        url = reverse('studybuddy:send_message', kwargs={'room_id': self.room.id})
-        response = self.client.post(url, {'content': ''})  # empty content
+        url = reverse("studybuddy:send_message", kwargs={"room_id": self.room.id})
+        response = self.client.post(url, {"content": ""})  # empty content
 
         # Check that the response re-renders the room page (status 200)
         self.assertEqual(response.status_code, 200)
@@ -600,17 +618,21 @@ class ViewEdgeCaseTests(TestCase):
         # Ensure no message was created
         self.assertEqual(Message.objects.filter(room=self.room).count(), 0)
 
+
 class AdminTests(TestCase):
     def setUp(self):
         self.site = AdminSite()
         self.user = create_user()
-        self.note = Note.objects.create(user=self.user, title="Admin Note", content="Content")
+        self.note = Note.objects.create(
+            user=self.user, title="Admin Note", content="Content"
+        )
         self.admin = NoteAdmin(Note, self.site)
 
     def test_note_admin_str(self):
         """Test Note admin string representation"""
         self.assertEqual(str(self.note), "Admin Note")
-=======
+
+
 # ------------------------
 # Edit Profile tests
 # ------------------------
@@ -719,4 +741,3 @@ class RealTimeChatTests(TestCase):
         self.assertTrue(data["messages"][0]["is_own"])
         self.assertFalse(data["messages"][1]["is_own"])
         self.assertTrue(data["messages"][2]["is_own"])
->>>>>>> develop

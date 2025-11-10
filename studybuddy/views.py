@@ -286,23 +286,6 @@ def message_delete(request, message_id):
     messages.success(request, "Message deleted successfully.")
     return redirect("studybuddy:room_detail", room_id=room_id)
 
-@login_required
-def send_message(request, room_id):
-    room = get_object_or_404(Room, pk=room_id)
-
-    if request.method == 'POST':
-        content = request.POST.get('content', '').strip()
-        if not content:
-            return render(request, 'studybuddy/room.html', {  # note correct path
-                'room': room,
-                'error': "Message content cannot be empty"
-            })
-
-        Message.objects.create(user=request.user, room=room, content=content)
-        return redirect('studybuddy:room_detail', room_id=room.id)
-
-    return redirect('studybuddy:room_detail', room_id=room.id)
-
 
 # -----------------------------
 # TIMER CONTROLS

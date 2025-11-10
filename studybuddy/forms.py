@@ -36,14 +36,15 @@ class ProfileUpdateForm(forms.ModelForm):
         model = UserProfile
         fields = ["bio", "phone_number", "location"]
 
+
 class RegisterForm(forms.ModelForm):
     password2 = forms.CharField(widget=forms.PasswordInput, label="Confirm password")
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password']
+        fields = ["username", "email", "password"]
         widgets = {
-            'password': forms.PasswordInput(),
+            "password": forms.PasswordInput(),
         }
 
     def clean_password2(self):

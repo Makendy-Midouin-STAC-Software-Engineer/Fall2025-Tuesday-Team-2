@@ -57,7 +57,6 @@ def custom_register(request):
         password = request.POST.get("password")
         password2 = request.POST.get("password2")
 
-        # Validation
         if password != password2:
             messages.error(request, "Passwords do not match.")
         elif User.objects.filter(username=username).exists():
@@ -212,7 +211,7 @@ class NoteDeleteView(LoginRequiredMixin, DeleteView):
 
 
 # -----------------------------
-# ROOMS & MESSAGES FEATURE
+# ROOMS & MESSAGES FEATURE (updated)
 # -----------------------------
 
 
@@ -289,7 +288,7 @@ def message_delete(request, message_id):
 
 
 # -----------------------------
-# POMODORO TIMER CONTROLS
+# TIMER CONTROLS
 # -----------------------------
 
 
@@ -352,7 +351,6 @@ def timer_reset(request, room_id):
 
 @login_required
 def timer_state(request, room_id):
-    """Get current timer state - all users can view"""
     room = get_object_or_404(Room, id=room_id)
     return JsonResponse(room.get_timer_state())
 

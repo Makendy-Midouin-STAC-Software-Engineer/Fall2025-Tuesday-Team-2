@@ -1,6 +1,15 @@
 {% extends 'studybuddy/base.html' %}
 {% block title %}{{ room.name }}{% endblock %}
 {% block content %}
+
+<!-- 🔒 Private Room Banner -->
+{% if room.is_private %}
+<div style="background-color:#fef08a;padding:10px;border-radius:8px;margin-bottom:15px;text-align:center;">
+    🔒 <strong>Private Room</strong><br>
+    Share this code to invite others: <strong>{{ room.access_code }}</strong>
+</div>
+{% endif %}
+
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
     <h2 style="margin:0;">{{ room.name }}</h2>
     {% if room.created_by == request.user %}
@@ -126,17 +135,14 @@ function updateTimerDisplay(state) {
     const minutes = Math.floor(state.time_left / 60);
     const seconds = state.time_left % 60;
     
-    // Update display
     document.getElementById('timer-display').textContent = 
         `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     
-    // Update mode
     const modeText = state.mode === 'work' ? 'Work Session' : 'Break Time';
     document.getElementById('timer-mode').textContent = modeText;
     document.getElementById('timer-display').style.color = 
         state.mode === 'work' ? '#2563eb' : '#16a34a';
     
-    // Update button visibility (only for creator)
     if (IS_CREATOR) {
         const startBtn = document.getElementById('start-btn');
         const pauseBtn = document.getElementById('pause-btn');
@@ -150,14 +156,12 @@ function updateTimerDisplay(state) {
         }
     }
     
-    // Play notification when mode changes
     if (lastMode !== state.mode && state.time_left === state.duration) {
         playNotificationSound();
         const message = state.mode === 'work' ? 
             'Break finished! Time to work!' : 
             'Work session finished! Take a break!';
         
-        // Show notification
         if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('Pomodoro Timer', { body: message });
         } else {
@@ -169,7 +173,6 @@ function updateTimerDisplay(state) {
 
 async function startTimer() {
     if (!IS_CREATOR) return;
-    
     try {
         const response = await fetch(`/studybuddy/room/${ROOM_ID}/timer/start/`, {
             method: 'POST',
@@ -187,7 +190,6 @@ async function startTimer() {
 
 async function pauseTimer() {
     if (!IS_CREATOR) return;
-    
     try {
         const response = await fetch(`/studybuddy/room/${ROOM_ID}/timer/pause/`, {
             method: 'POST',
@@ -205,7 +207,6 @@ async function pauseTimer() {
 
 async function resetTimer() {
     if (!IS_CREATOR) return;
-    
     try {
         const response = await fetch(`/studybuddy/room/${ROOM_ID}/timer/reset/`, {
             method: 'POST',
@@ -260,7 +261,6 @@ function playNotificationSound() {
 
 // Initialize everything when page loads
 window.addEventListener('DOMContentLoaded', () => {
-    // Request notification permission
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }
@@ -314,7 +314,6 @@ window.addEventListener('DOMContentLoaded', () => {
     messagePollInterval = setInterval(fetchMessages, 1500);
 });
 
-// Clean up polling when leaving page
 window.addEventListener('beforeunload', () => {
     if (pollInterval) {
         clearInterval(pollInterval);

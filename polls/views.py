@@ -46,28 +46,28 @@ def vote(request, question_id):
     else:
         selected_choice.votes = F("votes") + 1
         selected_choice.save()
-        # Always return an HttpResponseRedirect after successfully dealing with POST data.
+        # Always return an HttpResponseRedirect after successfully
+        # dealing with POST data.
         return HttpResponseRedirect(reverse("polls:results", args=(question.id,)))
 
 
 # ---------- Authentication Views ----------
 def custom_login(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
 
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
             login(request, user)
-            return redirect('polls:index')  # Redirect to home after login
+            return redirect("polls:index")  # Redirect to home after login
         else:
-            messages.error(request, 'Invalid username or password')
+            messages.error(request, "Invalid username or password")
 
-    return render(request, 'polls/login.html')
+    return render(request, "polls/login.html")
 
 
 def custom_logout(request):
     logout(request)
-    return render(request, 'polls/logout.html')
-
+    return render(request, "polls/logout.html")

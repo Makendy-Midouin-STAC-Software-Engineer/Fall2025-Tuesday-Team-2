@@ -6,10 +6,10 @@ app_name = "studybuddy"
 
 urlpatterns = [
     path("", views.home_view, name="home"),  # Home page
+    path("edit-profile/", views.edit_profile, name="edit_profile"),
     path("register/", views.custom_register, name="register"),
     path("login/", views.custom_login, name="login"),
     path("logout/", views.custom_logout, name="logout"),
-    path("verify-email/<uuid:token>/", views.verify_email, name="verify_email"),
     path(
         "forgot-password/", views.password_reset_request, name="password_reset_request"
     ),
@@ -18,6 +18,9 @@ urlpatterns = [
         views.password_reset_confirm,
         name="password_reset_confirm",
     ),
+    # Profile URL
+    path("profile/", views.profile, name="profile"),
+    path("profile/edit/", views.edit_profile, name="edit_profile"),
     # Notes URLs
     path("notes/", views.NoteListView.as_view(), name="note_list"),
     path("notes/add/", views.NoteCreateView.as_view(), name="note_add"),
@@ -27,13 +30,17 @@ urlpatterns = [
     path("rooms/", views.rooms, name="rooms"),
     path("room/<int:room_id>/", views.room_detail, name="room_detail"),
     path("room/<int:room_id>/delete/", views.room_delete, name="room_delete"),
+    path("room/<int:room_id>/messages/", views.get_messages, name="get_messages"),
+    path("room/<int:room_id>/send-message/", views.send_message, name="send_message"),
     path(
         "message/<int:message_id>/delete/", views.message_delete, name="message_delete"
     ),
-    path("join-room/", views.join_room_by_code, name="join_room_by_code"),
     # Pomodoro Timer URLs
     path("room/<int:room_id>/timer/start/", views.timer_start, name="timer_start"),
     path("room/<int:room_id>/timer/pause/", views.timer_pause, name="timer_pause"),
     path("room/<int:room_id>/timer/reset/", views.timer_reset, name="timer_reset"),
     path("room/<int:room_id>/timer/state/", views.timer_state, name="timer_state"),
+    # Real-time chat API
+    path("room/<int:room_id>/messages/", views.get_messages, name="get_messages"),
+    path("room/<int:room_id>/send-message/", views.send_message, name="send_message"),
 ]

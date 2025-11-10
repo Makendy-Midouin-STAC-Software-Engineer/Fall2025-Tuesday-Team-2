@@ -5,6 +5,8 @@ import random
 import string
 from django.utils import timezone
 from datetime import timedelta
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 class UserProfile(models.Model):
@@ -15,11 +17,15 @@ class UserProfile(models.Model):
     )
     token_created_at = models.DateTimeField(auto_now_add=True)
 
+    # Editable fields (no profile image)
+    bio = models.TextField(blank=True, null=True)
+    location = models.CharField(max_length=100, blank=True, null=True)
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+
     def __str__(self):
         return f"{self.user.username}'s profile"
 
     def is_token_valid(self):
-        """Check if verification token is still valid (24 hours)"""
         return timezone.now() < self.token_created_at + timedelta(hours=24)
 
 
@@ -40,11 +46,7 @@ class Room(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="rooms")
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # NEW: Private Room Settings
-    is_private = models.BooleanField(default=False)
-    join_code = models.CharField(max_length=8, blank=True, null=True, unique=True)
-
-    # Pomodoro Timer Fields (server-side, synced across all users)
+    # Pomodoro Timer Fields
     timer_started_at = models.DateTimeField(null=True, blank=True)
     timer_duration = models.IntegerField(default=1500)  # 25 minutes in seconds
     timer_is_running = models.BooleanField(default=False)
@@ -54,18 +56,6 @@ class Room(models.Model):
 
     def __str__(self):
         return self.name
-
-    def save(self, *args, **kwargs):
-        """Auto-generate join code for private rooms"""
-
-        if self.is_private and not self.join_code:
-            self.join_code = "".join(
-                random.choices(string.ascii_uppercase + string.digits, k=8)
-            )
-        elif not self.is_private:
-            # Clear code if room is made public
-            self.join_code = None
-        super().save(*args, **kwargs)
 
     def get_timer_state(self):
         """Get current timer state for all users in the room"""
@@ -77,18 +67,14 @@ class Room(models.Model):
                 "duration": self.timer_duration,
             }
 
-        # Calculate time elapsed since timer started
         elapsed = int((timezone.now() - self.timer_started_at).total_seconds())
         time_left = max(0, self.timer_duration - elapsed)
 
-        # Check if timer has finished
         if time_left == 0:
-            # Auto-switch modes and reset
+            # Switch modes and reset
             self.timer_is_running = False
             self.timer_mode = "break" if self.timer_mode == "work" else "work"
-            self.timer_duration = (
-                300 if self.timer_mode == "break" else 1500
-            )  # 5 or 25 minutes
+            self.timer_duration = 300 if self.timer_mode == "break" else 1500
             self.save()
             time_left = self.timer_duration
 
@@ -108,3 +94,20 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.user.username}: {self.content[:30]}"
+
+
+# SIGNALS
+
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    """Automatically create a UserProfile whenever a new User is created"""
+    if created:
+        UserProfile.objects.create(user=instance)
+
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    """Automatically save the UserProfile whenever the User is saved"""
+    if hasattr(instance, "profile"):
+        instance.profile.save()

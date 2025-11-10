@@ -1,3 +1,7 @@
+# -----------------------------
+# IMPORTS
+# -----------------------------
+
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.models import User
@@ -10,14 +14,19 @@ from django.core.mail import send_mail
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
-import random
-import string
-from django.views.decorators.http import require_POST
 from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 from django.utils import timezone
-from .models import Room
-from .models import Note, Message, UserProfile
 
+from .forms import UserUpdateForm, ProfileUpdateForm
+
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
+
+
+import uuid
+
+from .models import Note, Room, Message, UserProfile
 
 # -----------------------------
 # AUTHENTICATION VIEWS
@@ -32,14 +41,14 @@ def custom_login(request):
         if user is not None:
             login(request, user)
             return redirect("studybuddy:note_list")
-        else:
-            messages.error(request, "Invalid username or password")
+        messages.error(request, "Invalid username or password")
     return render(request, "studybuddy/login.html")
 
 
 def custom_logout(request):
     logout(request)
-    return render(request, "studybuddy/logout.html")
+    messages.success(request, "You have been logged out.")
+    return redirect("studybuddy:login")
 
 
 def custom_register(request):
@@ -54,8 +63,10 @@ def custom_register(request):
             messages.error(request, "Username already exists.")
         else:
             user = User.objects.create_user(username=username, password=password)
-            user.save()
-            UserProfile.objects.create(user=user, email_verified=True)
+            user_profile = user.profile
+            user_profile.email_verified = True
+            user_profile.save()
+
             login(request, user)
             messages.success(
                 request,
@@ -66,54 +77,11 @@ def custom_register(request):
     return render(request, "studybuddy/register.html")
 
 
-def send_verification_email(request, user, profile):
-    verification_link = request.build_absolute_uri(
-        f"/studybuddy/verify-email/{profile.verification_token}/"
-    )
-    subject = "Verify your StudyBuddy account"
-    message = f"""
-Hi {user.username},
-
-Thank you for registering with StudyBuddy!
-
-Please click the link below to verify your email address:
-{verification_link}
-
-This link will expire in 24 hours.
-
-If you didn't create this account, please ignore this email.
-
-Best regards,
-The StudyBuddy Team
-    """
-    send_mail(
-        subject,
-        message,
-        "noreply@studybuddy.com",
-        [user.email],
-        fail_silently=False,
-    )
-
-
-def verify_email(request, token):
-    try:
-        profile = UserProfile.objects.get(verification_token=token)
-        if profile.email_verified:
-            messages.info(request, "Your email is already verified.")
-        elif profile.is_token_valid():
-            profile.email_verified = True
-            profile.save()
-            messages.success(request, "Email verified successfully!")
-        else:
-            messages.error(request, "This verification link has expired.")
-    except UserProfile.DoesNotExist:
-        messages.error(request, "Invalid verification link.")
-    return redirect("studybuddy:login")
-
-
 def password_reset_request(request):
+    """Handle password reset request"""
     if request.method == "POST":
         email = request.POST.get("email")
+
         try:
             user = User.objects.get(email=email)
             token = default_token_generator.make_token(user)
@@ -121,18 +89,17 @@ def password_reset_request(request):
             reset_link = request.build_absolute_uri(
                 f"/studybuddy/reset-password/{uid}/{token}/"
             )
+
             subject = "Password Reset Request - StudyBuddy"
-            message = f"""
-Hi {user.username},
+            message = (
+                f"Hi {user.username},\n\n"
+                "You requested to reset your password for your StudyBuddy account.\n\n"
+                f"Click the link below to reset your password:\n{reset_link}\n\n"
+                "This link will expire in 1 hour.\n\n"
+                "If you didn't request this, please ignore this email.\n\n"
+                "Best regards,\nThe StudyBuddy Team"
+            )
 
-You requested to reset your password.
-
-Click the link below to reset it:
-{reset_link}
-
-Best regards,
-The StudyBuddy Team
-            """
             send_mail(
                 subject,
                 message,
@@ -140,14 +107,21 @@ The StudyBuddy Team
                 [user.email],
                 fail_silently=False,
             )
+
             messages.success(
-                request, f"Password reset instructions have been sent to {email}."
+                request,
+                f"Password reset instructions have been sent to {email}. "
+                "For development, check the terminal for the email.",
             )
         except User.DoesNotExist:
             messages.success(
-                request, "If an account exists, reset instructions were sent."
+                request,
+                "If an account exists with that email, password reset instructions "
+                "have been sent.",
             )
+
         return redirect("studybuddy:login")
+
     return render(request, "studybuddy/password_reset.html")
 
 
@@ -158,7 +132,7 @@ def password_reset_confirm(request, uidb64, token):
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         user = None
 
-    if user is not None and default_token_generator.check_token(user, token):
+    if user and default_token_generator.check_token(user, token):
         if request.method == "POST":
             password = request.POST.get("password")
             password2 = request.POST.get("password2")
@@ -170,15 +144,16 @@ def password_reset_confirm(request, uidb64, token):
                 user.set_password(password)
                 user.save()
                 messages.success(
-                    request, "Password reset successful. You can now login."
+                    request,
+                    "Password has been reset successfully. You can now login.",
                 )
                 return redirect("studybuddy:login")
         return render(
             request, "studybuddy/password_reset_confirm.html", {"validlink": True}
         )
-    else:
-        messages.error(request, "Invalid or expired link.")
-        return redirect("studybuddy:password_reset_request")
+    return render(
+        request, "studybuddy/password_reset_confirm.html", {"validlink": False}
+    )
 
 
 def home_view(request):
@@ -188,8 +163,7 @@ def home_view(request):
             "studybuddy/home_logged_in.html",
             {"username": request.user.username},
         )
-    else:
-        return render(request, "studybuddy/home.html")
+    return render(request, "studybuddy/home.html")
 
 
 # -----------------------------
@@ -199,6 +173,7 @@ def home_view(request):
 
 @login_required
 def notes_home(request):
+    """Simple notes homepage (placeholder)"""
     return render(request, "notes/home.html")
 
 
@@ -243,33 +218,13 @@ class NoteDeleteView(LoginRequiredMixin, DeleteView):
 @login_required
 def rooms(request):
     if request.method == "POST":
-        if "join_code" in request.POST:  # Joining private room
-            code = request.POST.get("join_code")
-            try:
-                room = Room.objects.get(join_code=code)
-                return redirect("studybuddy:room_detail", room_id=room.id)
-            except Room.DoesNotExist:
-                messages.error(request, "Invalid room code.")
-                return redirect("studybuddy:rooms")
-
-        # Create room
         name = request.POST.get("name")
         description = request.POST.get("description")
-        is_private = request.POST.get("is_private") == "on"
-
-        join_code = None
-        if is_private:
-            join_code = "".join(
-                random.choices(string.ascii_uppercase + string.digits, k=6)
-            )
-
         if name:
             Room.objects.create(
                 name=name,
                 description=description,
                 created_by=request.user,
-                is_private=is_private,
-                join_code=join_code,
             )
         return redirect("studybuddy:rooms")
 
@@ -295,13 +250,16 @@ def room_detail(request, room_id):
 @login_required
 def room_delete(request, room_id):
     room = get_object_or_404(Room, id=room_id)
+
     if room.created_by != request.user:
         messages.error(request, "You don't have permission to delete this room.")
         return redirect("studybuddy:room_detail", room_id=room.id)
+
     if request.method == "POST":
         room.delete()
-        messages.success(request, f"Room '{room.name}' deleted.")
+        messages.success(request, f"Room '{room.name}' has been deleted.")
         return redirect("studybuddy:rooms")
+
     return render(request, "studybuddy/room_confirm_delete.html", {"room": room})
 
 
@@ -310,30 +268,29 @@ def message_delete(request, message_id):
     message = get_object_or_404(Message, id=message_id)
     room_id = message.room.id
     if message.user != request.user:
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse(
+                {"error": "You don't have permission to delete this message."},
+                status=403,
+            )
         messages.error(request, "You don't have permission to delete this message.")
         return redirect("studybuddy:room_detail", room_id=room_id)
+
     message.delete()
-    messages.success(request, "Message deleted.")
+
+    # Return JSON response for AJAX requests
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse({"success": True})
+
+    messages.success(request, "Message deleted successfully.")
     return redirect("studybuddy:room_detail", room_id=room_id)
-
-
-# --- JOIN PRIVATE ROOM BY CODE ---
-def join_room_by_code(request):
-    """Allow users to join a private room using a generated code."""
-    if request.method == "POST":
-        code = request.POST.get("join_code", "").strip()
-        try:
-            room = Room.objects.get(join_code=code)
-            return redirect("studybuddy:room_detail", room_id=room.id)
-        except Room.DoesNotExist:
-            messages.error(request, "Invalid or expired room code.")
-            return redirect("studybuddy:rooms")
-    return redirect("studybuddy:rooms")
 
 
 # -----------------------------
 # TIMER CONTROLS
 # -----------------------------
+
+
 @login_required
 @require_POST
 def timer_start(request, room_id):
@@ -386,3 +343,125 @@ def timer_reset(request, room_id):
 def timer_state(request, room_id):
     room = get_object_or_404(Room, id=room_id)
     return JsonResponse(room.get_timer_state())
+
+
+@login_required
+def get_messages(request, room_id):
+    """Get messages for a room in JSON format for real-time chat updates"""
+    room = get_object_or_404(Room, id=room_id)
+    room_messages = room.messages.order_by("timestamp")
+
+    messages_data = []
+    for msg in room_messages:
+        # Send ISO 8601 timestamp for frontend timezone conversion
+        timestamp_iso = msg.timestamp.isoformat()
+        messages_data.append(
+            {
+                "id": msg.id,
+                "user": msg.user.username,
+                "content": msg.content,
+                "timestamp": timestamp_iso,
+                "is_own": msg.user.id == request.user.id,
+            }
+        )
+
+    return JsonResponse({"messages": messages_data})
+
+
+@login_required
+@require_POST
+def send_message(request, room_id):
+    """Send a message via AJAX - returns JSON response"""
+    room = get_object_or_404(Room, id=room_id)
+    content = request.POST.get("content", "").strip()
+
+    if not content:
+        return JsonResponse({"error": "Message content is required"}, status=400)
+
+    message = Message.objects.create(room=room, user=request.user, content=content)
+
+    # Send ISO 8601 timestamp for frontend timezone conversion
+    timestamp_iso = message.timestamp.isoformat()
+
+    return JsonResponse(
+        {
+            "success": True,
+            "message": {
+                "id": message.id,
+                "user": message.user.username,
+                "content": message.content,
+                "timestamp": timestamp_iso,
+                "is_own": True,
+            },
+        }
+    )
+
+
+# -----------------------------
+# Profile
+# -----------------------------
+
+
+@login_required
+def edit_profile(request):
+    # Initialize forms (will be overwritten if POST)
+    u_form = UserUpdateForm(instance=request.user)
+    p_form = ProfileUpdateForm(instance=request.user.profile)
+    pw_form = PasswordChangeForm(user=request.user)
+
+    if request.method == "POST":
+        # Check if this is a profile update (has profile fields or update_info button)
+        profile_fields = {
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            "bio",
+            "phone_number",
+            "location",
+        }
+        has_profile_data = any(field in request.POST for field in profile_fields)
+
+        if "update_info" in request.POST or (
+            has_profile_data and "change_password" not in request.POST
+        ):
+            # Updating account & profile info
+            # Ensure email is included if not in POST (use existing email)
+            post_data = request.POST.copy()
+            if "email" not in post_data and request.user.email:
+                post_data["email"] = request.user.email
+
+            u_form = UserUpdateForm(post_data, instance=request.user)
+            p_form = ProfileUpdateForm(request.POST, instance=request.user.profile)
+
+            if u_form.is_valid() and p_form.is_valid():
+                u_form.save()
+                p_form.save()
+                messages.success(request, "Your profile has been updated!")
+                return redirect("studybuddy:edit_profile")
+            else:
+                messages.error(request, "Please fix the errors below.")
+
+            pw_form = PasswordChangeForm(user=request.user)  # fresh password form
+
+        elif "change_password" in request.POST:
+            # Changing password
+            pw_form = PasswordChangeForm(user=request.user, data=request.POST)
+            u_form = UserUpdateForm(instance=request.user)
+            p_form = ProfileUpdateForm(instance=request.user.profile)
+
+            if pw_form.is_valid():
+                user = pw_form.save()
+                update_session_auth_hash(request, user)  # keeps user logged in
+                messages.success(request, "Your password has been updated!")
+                return redirect("studybuddy:edit_profile")
+            else:
+                messages.error(request, "Please fix the errors below.")
+
+    context = {"u_form": u_form, "p_form": p_form, "pw_form": pw_form}
+    return render(request, "studybuddy/edit_profile.html", context)
+
+
+@login_required
+def profile(request):
+    return render(request, "studybuddy/profile.html", {"user": request.user})

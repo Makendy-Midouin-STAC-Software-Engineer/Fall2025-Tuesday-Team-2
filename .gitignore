@@ -49,3 +49,8 @@ db.sqlite3-journal
 # OS
 .DS_Store
 Thumbs.db
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

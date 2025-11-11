@@ -43,6 +43,8 @@ class Room(models.Model):
     description = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="rooms")
     created_at = models.DateTimeField(auto_now_add=True)
+    is_private = models.BooleanField(default=False)
+    password = models.CharField(max_length=128, blank=True, null=True)
 
     # Pomodoro Timer Fields
     timer_started_at = models.DateTimeField(null=True, blank=True)

@@ -236,9 +236,30 @@ def rooms(request):
 @login_required
 def room_detail(request, room_id):
     room = get_object_or_404(Room, id=room_id)
+    user_is_creator = room.created_by_id == request.user.id
+    session_key = f"access_room_{room.id}"
+    has_session_access = request.session.get(session_key)
+
+    # --- Private room check ---
+    if room.is_private and not user_is_creator and not has_session_access:
+        error_message = None
+        if request.method == "POST" and "room_password" in request.POST:
+            submitted_password = request.POST.get("room_password", "")
+            if submitted_password and submitted_password == (room.password or ""):
+                request.session[session_key] = True
+                request.session.modified = True
+                return redirect("studybuddy:room_detail", room_id=room.id)
+            error_message = "Incorrect password."
+        return render(
+            request,
+            "studybuddy/room_password_prompt.html",
+            {"room": room, "error_message": error_message},
+        )
+
+    # --- Normal room logic ---
     room_messages = room.messages.order_by("timestamp")
 
-    if request.method == "POST":
+    if request.method == "POST" and "content" in request.POST:
         content = request.POST.get("content")
         if content:
             Message.objects.create(room=room, user=request.user, content=content)
@@ -246,6 +267,31 @@ def room_detail(request, room_id):
 
     context = {"room": room, "messages": room_messages}
     return render(request, "studybuddy/room_detail.html", context)
+
+
+@login_required
+@require_POST
+def set_privacy(request, room_id):
+    room = get_object_or_404(Room, id=room_id)
+
+    if room.created_by != request.user:
+        return JsonResponse({"success": False, "error": "Unauthorized"}, status=403)
+
+    make_private = request.POST.get("is_private", "").lower() in {"1", "true", "yes"}
+    if make_private:
+        password = (request.POST.get("password") or "").strip()
+        if not password:
+            return JsonResponse(
+                {"success": False, "error": "Password is required."}, status=400
+            )
+        room.is_private = True
+        room.password = password
+    else:
+        room.is_private = False
+        room.password = None
+
+    room.save()
+    return JsonResponse({"success": True, "is_private": room.is_private})
 
 
 @login_required

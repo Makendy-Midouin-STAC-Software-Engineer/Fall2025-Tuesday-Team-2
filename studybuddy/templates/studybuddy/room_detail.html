@@ -11,6 +11,31 @@
     {% endif %}
 </div>
 
+{% if room.created_by == request.user %}
+<div id="privacy-controls" style="margin-bottom:20px;padding:15px;background-color:#eef2ff;border-radius:10px;">
+    <p id="privacy-status" style="margin:0 0 10px 0;color:#1e3a8a;">
+        This room is currently <strong>{% if room.is_private %}private{% else %}public{% endif %}</strong>.
+    </p>
+    <button id="togglePrivacyBtn"
+            style="background-color:{% if room.is_private %}#16a34a{% else %}#2563eb{% endif %};color:white;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;">
+        {% if room.is_private %}Make Public{% else %}Make Private{% endif %}
+    </button>
+    <form id="privacyPasswordForm" style="margin-top:12px;display:none;">
+        <input type="password" id="privacyPasswordInput" placeholder="New room password" required
+               style="padding:8px;border-radius:6px;border:1px solid #cbd5f5;margin-right:8px;">
+        <button type="submit"
+                style="background-color:#1d4ed8;color:white;padding:8px 14px;border:none;border-radius:6px;cursor:pointer;">
+            Confirm
+        </button>
+    </form>
+    <p id="privacyError" style="display:none;color:#dc2626;margin-top:8px;"></p>
+</div>
+{% else %}
+<div style="margin-bottom:20px;padding:12px;border-radius:8px;background-color:#f3f4f6;color:#374151;">
+    This room is {% if room.is_private %}<strong>private</strong>{% else %}<strong>public</strong>{% endif %}.
+</div>
+{% endif %}
+
 <div style="display:flex;gap:20px;">
     <!-- Chat Section -->
     <div style="flex:2;">
@@ -110,6 +135,49 @@ let pollInterval = null;
 let messagePollInterval = null;
 let lastMode = 'work';
 let lastMessageId = null;
+const privacyEndpoint = `/studybuddy/room/${ROOM_ID}/set_privacy/`;
+let roomIsPrivate = {{ room.is_private|yesno:"true,false" }};
+const togglePrivacyBtn = document.getElementById('togglePrivacyBtn');
+const privacyPasswordForm = document.getElementById('privacyPasswordForm');
+const privacyPasswordInput = document.getElementById('privacyPasswordInput');
+const privacyStatus = document.getElementById('privacy-status');
+const privacyError = document.getElementById('privacyError');
+
+if (togglePrivacyBtn) {
+    togglePrivacyBtn.addEventListener('click', () => {
+        if (roomIsPrivate) {
+            updateRoomPrivacy({ is_private: 'false' });
+        } else if (privacyPasswordForm) {
+            privacyPasswordForm.style.display = 'block';
+            if (privacyError) {
+                privacyError.style.display = 'none';
+                privacyError.textContent = '';
+            }
+            if (privacyPasswordInput) {
+                privacyPasswordInput.value = '';
+                privacyPasswordInput.focus();
+            }
+        }
+    });
+}
+
+if (privacyPasswordForm) {
+    privacyPasswordForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!privacyPasswordInput) {
+            return;
+        }
+        const value = privacyPasswordInput.value.trim();
+        if (!value) {
+            if (privacyError) {
+                privacyError.textContent = 'Password is required.';
+                privacyError.style.display = 'block';
+            }
+            return;
+        }
+        await updateRoomPrivacy({ is_private: 'true', password: value });
+    });
+}
 
 // Fetch timer state from server
 async function fetchTimerState() {
@@ -165,6 +233,45 @@ function updateTimerDisplay(state) {
         }
     }
     lastMode = state.mode;
+}
+
+async function updateRoomPrivacy(payload) {
+    if (!togglePrivacyBtn) {
+        return;
+    }
+
+    if (privacyError) {
+        privacyError.style.display = 'none';
+        privacyError.textContent = '';
+    }
+
+    const formData = new FormData();
+    Object.entries(payload).forEach(([key, value]) => formData.append(key, value));
+
+    try {
+        const response = await fetch(privacyEndpoint, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: formData,
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            if (privacyError) {
+                privacyError.textContent = data.error || 'Unable to update privacy settings.';
+                privacyError.style.display = 'block';
+            }
+            return;
+        }
+        window.location.reload();
+    } catch (error) {
+        if (privacyError) {
+            privacyError.textContent = 'Unable to update privacy settings.';
+            privacyError.style.display = 'block';
+        }
+        console.error('Error updating privacy:', error);
+    }
 }
 
 async function startTimer() {

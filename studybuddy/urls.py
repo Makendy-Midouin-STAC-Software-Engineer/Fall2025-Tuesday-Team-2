@@ -29,6 +29,11 @@ urlpatterns = [
     # Rooms URLs
     path("rooms/", views.rooms, name="rooms"),
     path("room/<int:room_id>/", views.room_detail, name="room_detail"),
+    path(
+        "room/<int:room_id>/set_privacy/",
+        views.set_privacy,
+        name="set_privacy",
+    ),
     path("room/<int:room_id>/delete/", views.room_delete, name="room_delete"),
     path("room/<int:room_id>/messages/", views.get_messages, name="get_messages"),
     path("room/<int:room_id>/send-message/", views.send_message, name="send_message"),

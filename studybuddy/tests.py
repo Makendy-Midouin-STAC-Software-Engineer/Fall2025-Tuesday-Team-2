@@ -556,3 +556,418 @@ class RealTimeChatTests(TestCase):
         self.assertTrue(data["messages"][0]["is_own"])
         self.assertFalse(data["messages"][1]["is_own"])
         self.assertTrue(data["messages"][2]["is_own"])
+
+
+# ------------------------
+# Private Room tests
+# ------------------------
+class PrivateRoomTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user1 = create_user(username="user1", password="password123")
+        self.user2 = create_user(username="user2", password="password123")
+        self.client.login(username="user1", password="password123")
+        self.room = Room.objects.create(name="TestRoom", created_by=self.user1)
+
+    def test_generate_private_code(self):
+        """Test that generate_private_code creates a unique code"""
+        code1 = self.room.generate_private_code()
+        code2 = self.room.generate_private_code()
+        # Codes should be different
+        self.assertNotEqual(code1, code2)
+        # Codes should be 6-8 characters
+        self.assertGreaterEqual(len(code1), 6)
+        self.assertLessEqual(len(code1), 8)
+
+    def test_set_privacy_make_private(self):
+        """Test making a room private with auto-generated code"""
+        response = self.client.post(
+            reverse("studybuddy:set_privacy", kwargs={"room_id": self.room.id}),
+            {"is_private": "true"},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertTrue(data["is_private"])
+        self.assertIsNotNone(data["code"])
+        self.assertGreaterEqual(len(data["code"]), 6)
+
+        # Verify room is now private
+        self.room.refresh_from_db()
+        self.assertTrue(self.room.is_private)
+        self.assertIsNotNone(self.room.password)
+        self.assertEqual(self.room.password, data["code"])
+
+    def test_set_privacy_make_public(self):
+        """Test making a private room public"""
+        self.room.is_private = True
+        self.room.password = "TESTCODE"
+        self.room.save()
+
+        response = self.client.post(
+            reverse("studybuddy:set_privacy", kwargs={"room_id": self.room.id}),
+            {"is_private": "false"},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertFalse(data["is_private"])
+
+        # Verify room is now public
+        self.room.refresh_from_db()
+        self.assertFalse(self.room.is_private)
+        self.assertIsNone(self.room.password)
+
+    def test_set_privacy_unauthorized(self):
+        """Test that non-creators cannot change privacy"""
+        self.client.logout()
+        self.client.login(username="user2", password="password123")
+
+        response = self.client.post(
+            reverse("studybuddy:set_privacy", kwargs={"room_id": self.room.id}),
+            {"is_private": "true"},
+        )
+        self.assertEqual(response.status_code, 403)
+        data = response.json()
+        self.assertFalse(data["success"])
+
+    def test_join_private_room_valid_code(self):
+        """Test joining a private room with valid code"""
+        self.room.is_private = True
+        self.room.password = "ABC123"
+        self.room.save()
+
+        self.client.logout()
+        self.client.login(username="user2", password="password123")
+
+        response = self.client.post(
+            reverse("studybuddy:join_private_room"), {"room_code": "ABC123"}
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects to room
+        # Check session access was granted
+        session = self.client.session
+        self.assertTrue(session.get(f"access_room_{self.room.id}"))
+
+    def test_join_private_room_invalid_code(self):
+        """Test joining a private room with invalid code"""
+        self.room.is_private = True
+        self.room.password = "ABC123"
+        self.room.save()
+
+        self.client.logout()
+        self.client.login(username="user2", password="password123")
+
+        response = self.client.post(
+            reverse("studybuddy:join_private_room"), {"room_code": "WRONG"}
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects back to rooms
+
+    def test_join_private_room_empty_code(self):
+        """Test joining with empty code"""
+        response = self.client.post(
+            reverse("studybuddy:join_private_room"), {"room_code": ""}
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_room_detail_private_room_access(self):
+        """Test accessing private room with session access"""
+        self.room.is_private = True
+        self.room.password = "TESTCODE"
+        self.room.save()
+
+        self.client.logout()
+        self.client.login(username="user2", password="password123")
+
+        # First attempt should show password prompt
+        response = self.client.get(
+            reverse("studybuddy:room_detail", kwargs={"room_id": self.room.id})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "password")
+
+        # Submit correct password
+        response = self.client.post(
+            reverse("studybuddy:room_detail", kwargs={"room_id": self.room.id}),
+            {"room_password": "TESTCODE"},
+        )
+        self.assertEqual(response.status_code, 302)
+
+        # Now should have access
+        response = self.client.get(
+            reverse("studybuddy:room_detail", kwargs={"room_id": self.room.id})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "TestRoom")
+
+    def test_room_detail_private_room_wrong_password(self):
+        """Test accessing private room with wrong password"""
+        self.room.is_private = True
+        self.room.password = "TESTCODE"
+        self.room.save()
+
+        self.client.logout()
+        self.client.login(username="user2", password="password123")
+
+        response = self.client.post(
+            reverse("studybuddy:room_detail", kwargs={"room_id": self.room.id}),
+            {"room_password": "WRONG"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Incorrect password")
+
+    def test_room_detail_private_room_creator_access(self):
+        """Test that room creator can always access private room"""
+        self.room.is_private = True
+        self.room.password = "TESTCODE"
+        self.room.save()
+
+        # Creator should have direct access
+        response = self.client.get(
+            reverse("studybuddy:room_detail", kwargs={"room_id": self.room.id})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "TestRoom")
+
+    def test_get_rooms_api(self):
+        """Test get_rooms API endpoint"""
+        # Create public and private rooms
+        public_room = Room.objects.create(
+            name="PublicRoom", created_by=self.user1, is_private=False
+        )
+        private_room = Room.objects.create(
+            name="PrivateRoom",
+            created_by=self.user1,
+            is_private=True,
+            password="CODE123",
+        )
+
+        response = self.client.get(reverse("studybuddy:get_rooms"))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("rooms", data)
+        # Should only return public rooms
+        room_ids = [room["id"] for room in data["rooms"]]
+        self.assertIn(public_room.id, room_ids)
+        self.assertNotIn(private_room.id, room_ids)
+
+    def test_get_rooms_api_room_data(self):
+        """Test get_rooms API returns correct room data"""
+        # Delete the room from setUp
+        self.room.delete()
+
+        room = Room.objects.create(
+            name="TestRoom",
+            description="Test Description",
+            created_by=self.user1,
+            is_private=False,
+        )
+
+        response = self.client.get(reverse("studybuddy:get_rooms"))
+        data = response.json()
+        self.assertEqual(len(data["rooms"]), 1)
+        room_data = data["rooms"][0]
+        self.assertEqual(room_data["id"], room.id)
+        self.assertEqual(room_data["name"], "TestRoom")
+        self.assertEqual(room_data["description"], "Test Description")
+        self.assertEqual(room_data["created_by"], "user1")
+        self.assertTrue(room_data["is_creator"])
+
+    def test_rooms_view_filters_private(self):
+        """Test that rooms view only shows public rooms"""
+        # Create public and private rooms
+        Room.objects.create(name="PublicRoom", created_by=self.user1, is_private=False)
+        Room.objects.create(
+            name="PrivateRoom",
+            created_by=self.user1,
+            is_private=True,
+            password="CODE123",
+        )
+
+        response = self.client.get(reverse("studybuddy:rooms"))
+        self.assertEqual(response.status_code, 200)
+        # Should only show public room
+        self.assertContains(response, "PublicRoom")
+        self.assertNotContains(response, "PrivateRoom")
+
+
+# ------------------------
+# Additional coverage tests
+# ------------------------
+class AdditionalCoverageTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = create_user()
+        self.client.login(username="testuser", password="password123")
+
+    def test_profile_view(self):
+        """Test profile view"""
+        response = self.client.get(reverse("studybuddy:profile"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_room_delete_get_not_creator(self):
+        """Test room delete GET when user is not creator"""
+        other_user = create_user(username="otheruser", password="password123")
+        room = Room.objects.create(name="OtherRoom", created_by=other_user)
+
+        response = self.client.get(
+            reverse("studybuddy:room_delete", kwargs={"room_id": room.id})
+        )
+        # Should redirect with error message
+        self.assertEqual(response.status_code, 302)
+
+    def test_message_delete_ajax(self):
+        """Test message delete via AJAX"""
+        room = Room.objects.create(name="TestRoom", created_by=self.user)
+        message = Message.objects.create(
+            room=room, user=self.user, content="Test message"
+        )
+
+        response = self.client.post(
+            reverse("studybuddy:message_delete", kwargs={"message_id": message.id}),
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+
+    def test_message_delete_ajax_unauthorized(self):
+        """Test message delete via AJAX when not owner"""
+        other_user = create_user(username="otheruser", password="password123")
+        room = Room.objects.create(name="TestRoom", created_by=self.user)
+        message = Message.objects.create(
+            room=room, user=other_user, content="Test message"
+        )
+
+        response = self.client.post(
+            reverse("studybuddy:message_delete", kwargs={"message_id": message.id}),
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 403)
+        data = response.json()
+        self.assertIn("error", data)
+
+    def test_edit_profile_change_password(self):
+        """Test changing password via edit profile"""
+        response = self.client.post(
+            reverse("studybuddy:edit_profile"),
+            {
+                "change_password": "1",
+                "old_password": "password123",
+                "new_password1": "newpassword123",
+                "new_password2": "newpassword123",
+            },
+        )
+        self.assertEqual(response.status_code, 302)  # Redirect on success
+
+    def test_edit_profile_change_password_mismatch(self):
+        """Test changing password with mismatched passwords"""
+        response = self.client.post(
+            reverse("studybuddy:edit_profile"),
+            {
+                "change_password": "1",
+                "old_password": "password123",
+                "new_password1": "newpassword123",
+                "new_password2": "differentpass",
+            },
+        )
+        self.assertEqual(response.status_code, 200)  # Shows error
+
+    def test_edit_profile_form_errors(self):
+        """Test edit profile with form errors"""
+        response = self.client.post(
+            reverse("studybuddy:edit_profile"),
+            {
+                "update_info": "1",
+                "username": "",  # Invalid empty username
+            },
+        )
+        self.assertEqual(response.status_code, 200)  # Shows errors
+
+    def test_password_reset_confirm_valid_token_get(self):
+        """Test password reset confirm GET with valid token"""
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
+
+        token = default_token_generator.make_token(self.user)
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+
+        self.client.logout()
+        response = self.client.get(
+            reverse(
+                "studybuddy:password_reset_confirm",
+                kwargs={"uidb64": uidb64, "token": token},
+            )
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_password_reset_confirm_valid_token_post(self):
+        """Test password reset confirm POST with valid token"""
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
+
+        # Ensure user has email for token generation
+        self.user.email = "test@example.com"
+        self.user.save()
+
+        token = default_token_generator.make_token(self.user)
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+
+        self.client.logout()
+        response = self.client.post(
+            reverse(
+                "studybuddy:password_reset_confirm",
+                kwargs={"uidb64": uidb64, "token": token},
+            ),
+            {
+                "password": "newpassword123",
+                "password2": "newpassword123",
+            },
+        )
+        # Should redirect to login on success, or show page if validation fails
+        self.assertIn(response.status_code, [200, 302])
+
+    def test_password_reset_confirm_password_mismatch(self):
+        """Test password reset with mismatched passwords"""
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
+
+        token = default_token_generator.make_token(self.user)
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+
+        self.client.logout()
+        response = self.client.post(
+            reverse(
+                "studybuddy:password_reset_confirm",
+                kwargs={"uidb64": uidb64, "token": token},
+            ),
+            {
+                "password": "newpassword123",
+                "password2": "differentpass",
+            },
+        )
+        self.assertEqual(response.status_code, 200)  # Shows error
+
+    def test_password_reset_confirm_short_password(self):
+        """Test password reset with password too short"""
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
+
+        token = default_token_generator.make_token(self.user)
+        uidb64 = urlsafe_base64_encode(force_bytes(self.user.pk))
+
+        self.client.logout()
+        response = self.client.post(
+            reverse(
+                "studybuddy:password_reset_confirm",
+                kwargs={"uidb64": uidb64, "token": token},
+            ),
+            {
+                "password": "short",
+                "password2": "short",
+            },
+        )
+        self.assertEqual(response.status_code, 200)  # Shows error

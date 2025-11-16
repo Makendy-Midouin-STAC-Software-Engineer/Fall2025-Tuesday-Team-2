@@ -3,7 +3,7 @@
 {% block content %}
 <h1>Study Rooms</h1>
 
-<form method="POST" style="text-align:center;margin-bottom:30px;">
+<form id="create-room-form" method="POST" style="text-align:center;margin-bottom:30px;">
     {% csrf_token %}
     <input type="text" name="name" placeholder="Room name" required style="padding:10px;width:40%;border-radius:8px;border:1px solid #ccc;margin-right:10px;">
     <textarea name="description" placeholder="Description (optional)" style="padding:10px;width:40%;border-radius:8px;border:1px solid #ccc;"></textarea>
@@ -11,7 +11,7 @@
 </form>
 
 {% for room in rooms %}
-    <div style="background-color:#e5e7eb;padding:15px;border-radius:10px;margin-bottom:15px;display:flex;justify-content:space-between;align-items:center;">
+    <div data-room-id="{{ room.id }}" style="background-color:#e5e7eb;padding:15px;border-radius:10px;margin-bottom:15px;display:flex;justify-content:space-between;align-items:center;">
         <div style="flex:1;">
             <a href="{% url 'studybuddy:room_detail' room.id %}" style="color:#2563eb;font-weight:bold;font-size:18px;text-decoration:none;">{{ room.name }}</a><br>
             <span style="color:#555;font-size:0.9em;">Created by: {{ room.created_by.username }} | {{ room.created_at|date:"M d, Y" }}</span><br>
@@ -27,10 +27,165 @@
         {% endif %}
     </div>
 {% empty %}
-    <div style="background-color:#e5e7eb;padding:15px;border-radius:10px;">
-        <p>No rooms yet. Create one above!</p>
+    <div class="empty-rooms-message" style="background-color:#e5e7eb;padding:15px;border-radius:10px;">
+        <p>No public rooms yet. Create one above!</p>
     </div>
 {% endfor %}
+
+<!-- Join Private Room Section -->
+<div style="margin-top:40px;padding:20px;background-color:#f3f4f6;border-radius:10px;border:2px solid #d1d5db;">
+    <h2 style="margin-top:0;color:#1f2937;">Join Private Room</h2>
+    <p style="color:#6b7280;margin-bottom:15px;">Enter a room code to join a private study room.</p>
+    <form method="POST" action="{% url 'studybuddy:join_private_room' %}" style="display:flex;align-items:center;gap:10px;">
+        {% csrf_token %}
+        <input type="text" 
+               name="room_code" 
+               placeholder="Enter room code (e.g., ABC123)" 
+               required 
+               maxlength="10"
+               style="flex:1;padding:12px;border-radius:8px;border:1px solid #d1d5db;font-size:16px;text-transform:uppercase;letter-spacing:2px;text-align:center;"
+               pattern="[A-Z0-9]+"
+               title="Enter the room code (letters and numbers only)">
+        <button type="submit" 
+                style="background-color:#2563eb;color:white;padding:12px 24px;border:none;border-radius:8px;cursor:pointer;font-size:16px;font-weight:bold;">
+            Join Room
+        </button>
+    </form>
+</div>
+
+<script>
+// Auto-uppercase the room code input
+document.addEventListener('DOMContentLoaded', function() {
+    const codeInput = document.querySelector('input[name="room_code"]');
+    if (codeInput) {
+        codeInput.addEventListener('input', function(e) {
+            e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        });
+    }
+    
+    let roomsPollInterval = null;
+    
+    // Fetch rooms from server
+    async function fetchRooms() {
+        try {
+            const response = await fetch('/studybuddy/rooms/api/');
+            const data = await response.json();
+            updateRoomsList(data.rooms);
+        } catch (error) {
+            console.error('Error fetching rooms:', error);
+        }
+    }
+    
+    // Update rooms list display
+    function updateRoomsList(rooms) {
+        const existingRooms = document.querySelectorAll('[data-room-id]');
+        const existingIds = new Set(
+            Array.from(existingRooms).map(el => parseInt(el.getAttribute('data-room-id')))
+        );
+        const fetchedIds = new Set(rooms.map(room => room.id));
+        
+        // Remove rooms that no longer exist or became private
+        existingIds.forEach(roomId => {
+            if (!fetchedIds.has(roomId)) {
+                const roomElement = document.querySelector(`[data-room-id="${roomId}"]`);
+                if (roomElement) {
+                    roomElement.remove();
+                }
+            }
+        });
+        
+        // Add new rooms that don't exist yet
+        rooms.forEach(room => {
+            if (!existingIds.has(room.id)) {
+                addRoomToDOM(room);
+            }
+        });
+        
+        // Update empty state
+        const roomsList = document.querySelectorAll('[data-room-id]');
+        const emptyDiv = document.querySelector('.empty-rooms-message');
+        if (rooms.length === 0 && !emptyDiv) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.className = 'empty-rooms-message';
+            emptyMsg.style.cssText = 'background-color:#e5e7eb;padding:15px;border-radius:10px;';
+            emptyMsg.innerHTML = '<p>No public rooms yet. Create one above!</p>';
+            // Insert after the form
+            const form = document.getElementById('create-room-form');
+            if (form && form.nextSibling) {
+                form.parentNode.insertBefore(emptyMsg, form.nextSibling);
+            }
+        } else if (rooms.length > 0 && emptyDiv) {
+            emptyDiv.remove();
+        }
+    }
+    
+    // Add a single room to the DOM
+    function addRoomToDOM(room) {
+        const form = document.getElementById('create-room-form');
+        const emptyMsg = document.querySelector('.empty-rooms-message');
+        
+        // Remove empty message if it exists
+        if (emptyMsg) {
+            emptyMsg.remove();
+        }
+        
+        const roomDiv = document.createElement('div');
+        roomDiv.setAttribute('data-room-id', room.id);
+        roomDiv.style.cssText = 'background-color:#e5e7eb;padding:15px;border-radius:10px;margin-bottom:15px;display:flex;justify-content:space-between;align-items:center;';
+        
+        const deleteButton = room.is_creator ? `
+            <div>
+                <a href="/studybuddy/room/${room.id}/delete/" 
+                   style="background-color:#dc2626;color:white;padding:8px 16px;border-radius:8px;text-decoration:none;font-size:14px;">
+                    Delete
+                </a>
+            </div>` : '';
+        
+        const createdDate = new Date(room.created_at).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+        
+        roomDiv.innerHTML = `
+            <div style="flex:1;">
+                <a href="/studybuddy/room/${room.id}/" style="color:#2563eb;font-weight:bold;font-size:18px;text-decoration:none;">${escapeHtml(room.name)}</a><br>
+                <span style="color:#555;font-size:0.9em;">Created by: ${escapeHtml(room.created_by)} | ${createdDate}</span><br>
+                <span style="color:#333;">${escapeHtml(room.description)}</span>
+            </div>
+            ${deleteButton}
+        `;
+        
+        // Insert after the form, before other rooms
+        const firstRoom = document.querySelector('[data-room-id]');
+        if (firstRoom) {
+            firstRoom.parentNode.insertBefore(roomDiv, firstRoom);
+        } else if (form) {
+            form.parentNode.insertBefore(roomDiv, form.nextSibling);
+        }
+    }
+    
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // Initial fetch
+    fetchRooms();
+    
+    // Poll for room updates every 2 seconds
+    roomsPollInterval = setInterval(fetchRooms, 2000);
+    
+    // Clean up polling when leaving page
+    window.addEventListener('beforeunload', () => {
+        if (roomsPollInterval) {
+            clearInterval(roomsPollInterval);
+        }
+    });
+});
+</script>
 {% endblock %}
 
 

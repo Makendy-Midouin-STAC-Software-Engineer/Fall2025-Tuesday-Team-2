@@ -28,6 +28,8 @@ urlpatterns = [
     path("notes/<int:pk>/delete/", views.NoteDeleteView.as_view(), name="note_delete"),
     # Rooms URLs
     path("rooms/", views.rooms, name="rooms"),
+    path("rooms/api/", views.get_rooms, name="get_rooms"),
+    path("rooms/join/", views.join_private_room, name="join_private_room"),
     path("room/<int:room_id>/", views.room_detail, name="room_detail"),
     path(
         "room/<int:room_id>/set_privacy/",

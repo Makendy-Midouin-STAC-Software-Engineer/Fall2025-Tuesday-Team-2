@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 import uuid
+import secrets
+import string
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models.signals import post_save
@@ -84,6 +86,33 @@ class Room(models.Model):
             "mode": self.timer_mode,
             "duration": self.timer_duration,
         }
+
+    def generate_private_code(self):
+        """Generate a unique, easy-to-share code for private room access"""
+        # Generate a 6-character code using uppercase letters and numbers
+        code_length = 6
+        characters = string.ascii_uppercase + string.digits
+        # Exclude confusing characters (0, O, I, 1)
+        characters = (
+            characters.replace("0", "")
+            .replace("O", "")
+            .replace("I", "")
+            .replace("1", "")
+        )
+
+        max_attempts = 100
+        for _ in range(max_attempts):
+            code = "".join(secrets.choice(characters) for _ in range(code_length))
+            # Check if code is unique (not used by another private room)
+            if (
+                not Room.objects.filter(is_private=True, password=code)
+                .exclude(pk=self.pk)
+                .exists()
+            ):
+                return code
+
+        # Fallback: if we can't find a unique code, use a longer UUID-based code
+        return secrets.token_urlsafe(6).upper()[:8]
 
 
 class Message(models.Model):

@@ -15,20 +15,18 @@
 <div id="privacy-controls" style="margin-bottom:20px;padding:15px;background-color:#eef2ff;border-radius:10px;">
     <p id="privacy-status" style="margin:0 0 10px 0;color:#1e3a8a;">
         This room is currently <strong>{% if room.is_private %}private{% else %}public{% endif %}</strong>.
+        {% if room.is_private and room.password %}
+        <br><span style="font-size:0.9em;color:#059669;margin-top:8px;display:inline-block;">
+            Room Code: <strong style="font-size:1.2em;letter-spacing:2px;background-color:#d1fae5;padding:4px 8px;border-radius:4px;">{{ room.password }}</strong>
+        </span>
+        {% endif %}
     </p>
     <button id="togglePrivacyBtn"
             style="background-color:{% if room.is_private %}#16a34a{% else %}#2563eb{% endif %};color:white;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;">
         {% if room.is_private %}Make Public{% else %}Make Private{% endif %}
     </button>
-    <form id="privacyPasswordForm" style="margin-top:12px;display:none;">
-        <input type="password" id="privacyPasswordInput" placeholder="New room password" required
-               style="padding:8px;border-radius:6px;border:1px solid #cbd5f5;margin-right:8px;">
-        <button type="submit"
-                style="background-color:#1d4ed8;color:white;padding:8px 14px;border:none;border-radius:6px;cursor:pointer;">
-            Confirm
-        </button>
-    </form>
     <p id="privacyError" style="display:none;color:#dc2626;margin-top:8px;"></p>
+    <p id="privacySuccess" style="display:none;color:#059669;margin-top:8px;"></p>
 </div>
 {% else %}
 <div style="margin-bottom:20px;padding:12px;border-radius:8px;background-color:#f3f4f6;color:#374151;">
@@ -138,45 +136,144 @@ let lastMessageId = null;
 const privacyEndpoint = `/studybuddy/room/${ROOM_ID}/set_privacy/`;
 let roomIsPrivate = {{ room.is_private|yesno:"true,false" }};
 const togglePrivacyBtn = document.getElementById('togglePrivacyBtn');
-const privacyPasswordForm = document.getElementById('privacyPasswordForm');
-const privacyPasswordInput = document.getElementById('privacyPasswordInput');
 const privacyStatus = document.getElementById('privacy-status');
 const privacyError = document.getElementById('privacyError');
+const privacySuccess = document.getElementById('privacySuccess');
 
 if (togglePrivacyBtn) {
     togglePrivacyBtn.addEventListener('click', () => {
         if (roomIsPrivate) {
             updateRoomPrivacy({ is_private: 'false' });
-        } else if (privacyPasswordForm) {
-            privacyPasswordForm.style.display = 'block';
-            if (privacyError) {
-                privacyError.style.display = 'none';
-                privacyError.textContent = '';
-            }
-            if (privacyPasswordInput) {
-                privacyPasswordInput.value = '';
-                privacyPasswordInput.focus();
-            }
+        } else {
+            // Auto-generate code - no password input needed
+            updateRoomPrivacy({ is_private: 'true' });
         }
     });
 }
 
-if (privacyPasswordForm) {
-    privacyPasswordForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        if (!privacyPasswordInput) {
-            return;
+// Function to broadcast privacy changes to other tabs
+function broadcastPrivacyChange(isPrivate) {
+    // Broadcast privacy change to other tabs using BroadcastChannel
+    if (typeof BroadcastChannel !== 'undefined') {
+        const channel = new BroadcastChannel('room_privacy_updates');
+        channel.postMessage({
+            type: 'privacy_changed',
+            room_id: ROOM_ID,
+            is_private: isPrivate
+        });
+        channel.close();
+    }
+    
+    // Also use localStorage as fallback for older browsers
+    localStorage.setItem('room_privacy_update', JSON.stringify({
+        room_id: ROOM_ID,
+        is_private: isPrivate,
+        timestamp: Date.now()
+    }));
+}
+
+// Intercept fetch calls to set_privacy endpoint to broadcast changes
+const originalFetch = window.fetch;
+window.fetch = async function(...args) {
+    const response = await originalFetch.apply(this, args);
+    
+    // Check if this is a call to set_privacy endpoint
+    if (args[0] && typeof args[0] === 'string' && args[0].includes('/set_privacy/')) {
+        // Clone the response so we can read it without consuming it
+        const clonedResponse = response.clone();
+        try {
+            const data = await clonedResponse.json();
+            if (data.success && data.is_private !== undefined) {
+                // Broadcast the privacy change
+                broadcastPrivacyChange(data.is_private);
+            }
+        } catch (e) {
+            // Response might not be JSON, ignore
         }
-        const value = privacyPasswordInput.value.trim();
-        if (!value) {
+    }
+    
+    return response;
+};
+
+async function updateRoomPrivacy(payload) {
+    if (!togglePrivacyBtn) {
+        return;
+    }
+
+    if (privacyError) {
+        privacyError.style.display = 'none';
+        privacyError.textContent = '';
+    }
+    if (privacySuccess) {
+        privacySuccess.style.display = 'none';
+        privacySuccess.textContent = '';
+    }
+
+    const formData = new FormData();
+    Object.entries(payload).forEach(([key, value]) => formData.append(key, value));
+
+    try {
+        const response = await fetch(privacyEndpoint, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: formData,
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
             if (privacyError) {
-                privacyError.textContent = 'Password is required.';
+                privacyError.textContent = data.error || 'Unable to update privacy settings.';
                 privacyError.style.display = 'block';
             }
             return;
         }
-        await updateRoomPrivacy({ is_private: 'true', password: value });
-    });
+        
+        // If room was made private, show the generated code
+        if (data.is_private && data.code) {
+            roomIsPrivate = true;
+            // Update the status to show the code
+            if (privacyStatus) {
+                privacyStatus.innerHTML = `This room is currently <strong>private</strong>.<br>
+                    <span style="font-size:0.9em;color:#059669;margin-top:8px;display:inline-block;">
+                        Room Code: <strong style="font-size:1.2em;letter-spacing:2px;background-color:#d1fae5;padding:4px 8px;border-radius:4px;">${data.code}</strong>
+                    </span>`;
+            }
+            if (privacySuccess) {
+                privacySuccess.textContent = `Room is now private! Share this code: ${data.code}`;
+                privacySuccess.style.display = 'block';
+            }
+            if (togglePrivacyBtn) {
+                togglePrivacyBtn.textContent = 'Make Public';
+                togglePrivacyBtn.style.backgroundColor = '#16a34a';
+            }
+        } else {
+            // Room was made public
+            roomIsPrivate = false;
+            window.location.reload();
+        }
+    } catch (error) {
+        if (privacyError) {
+            privacyError.textContent = 'Unable to update privacy settings.';
+            privacyError.style.display = 'block';
+        }
+        console.error('Error updating privacy:', error);
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 
 // Fetch timer state from server
@@ -235,45 +332,6 @@ function updateTimerDisplay(state) {
     lastMode = state.mode;
 }
 
-async function updateRoomPrivacy(payload) {
-    if (!togglePrivacyBtn) {
-        return;
-    }
-
-    if (privacyError) {
-        privacyError.style.display = 'none';
-        privacyError.textContent = '';
-    }
-
-    const formData = new FormData();
-    Object.entries(payload).forEach(([key, value]) => formData.append(key, value));
-
-    try {
-        const response = await fetch(privacyEndpoint, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-            },
-            body: formData,
-        });
-        const data = await response.json();
-        if (!response.ok || !data.success) {
-            if (privacyError) {
-                privacyError.textContent = data.error || 'Unable to update privacy settings.';
-                privacyError.style.display = 'block';
-            }
-            return;
-        }
-        window.location.reload();
-    } catch (error) {
-        if (privacyError) {
-            privacyError.textContent = 'Unable to update privacy settings.';
-            privacyError.style.display = 'block';
-        }
-        console.error('Error updating privacy:', error);
-    }
-}
-
 async function startTimer() {
     if (!IS_CREATOR) return;
     
@@ -326,21 +384,6 @@ async function resetTimer() {
     } catch (error) {
         console.error('Error resetting timer:', error);
     }
-}
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
 }
 
 function playNotificationSound() {

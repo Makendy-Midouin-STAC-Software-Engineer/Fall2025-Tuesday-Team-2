@@ -17,6 +17,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+from django.db import transaction
 
 from .forms import UserUpdateForm, ProfileUpdateForm
 
@@ -24,9 +25,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 
 
-import uuid
-
-from .models import Note, Room, Message, UserProfile
+from .models import Note, Room, Message
 
 # -----------------------------
 # AUTHENTICATION VIEWS
@@ -229,8 +228,56 @@ def rooms(request):
             )
         return redirect("studybuddy:rooms")
 
-    all_rooms = Room.objects.all().order_by("-created_at")
+    # Only show public rooms in the list
+    all_rooms = Room.objects.filter(is_private=False).order_by("-created_at")
     return render(request, "studybuddy/rooms.html", {"rooms": all_rooms})
+
+
+@login_required
+def get_rooms(request):
+    """Get public rooms in JSON format for real-time updates"""
+    all_rooms = Room.objects.filter(is_private=False).order_by("-created_at")
+
+    rooms_data = []
+    for room in all_rooms:
+        rooms_data.append(
+            {
+                "id": room.id,
+                "name": room.name,
+                "description": room.description or "",
+                "created_by": room.created_by.username,
+                "created_at": room.created_at.isoformat(),
+                "is_creator": room.created_by.id == request.user.id,
+            }
+        )
+
+    return JsonResponse({"rooms": rooms_data})
+
+
+@login_required
+def join_private_room(request):
+    """Handle joining a private room by code"""
+    if request.method == "POST":
+        code = request.POST.get("room_code", "").strip().upper()
+
+        if not code:
+            messages.error(request, "Please enter a room code.")
+            return redirect("studybuddy:rooms")
+
+        # Find the private room with this code
+        try:
+            room = Room.objects.get(is_private=True, password=code)
+            # Grant session access to this room
+            session_key = f"access_room_{room.id}"
+            request.session[session_key] = True
+            request.session.modified = True
+            messages.success(request, f"Successfully joined '{room.name}'!")
+            return redirect("studybuddy:room_detail", room_id=room.id)
+        except Room.DoesNotExist:
+            messages.error(request, "Invalid room code. Please check and try again.")
+            return redirect("studybuddy:rooms")
+
+    return redirect("studybuddy:rooms")
 
 
 @login_required
@@ -278,20 +325,30 @@ def set_privacy(request, room_id):
         return JsonResponse({"success": False, "error": "Unauthorized"}, status=403)
 
     make_private = request.POST.get("is_private", "").lower() in {"1", "true", "yes"}
-    if make_private:
-        password = (request.POST.get("password") or "").strip()
-        if not password:
-            return JsonResponse(
-                {"success": False, "error": "Password is required."}, status=400
-            )
-        room.is_private = True
-        room.password = password
-    else:
-        room.is_private = False
-        room.password = None
 
-    room.save()
-    return JsonResponse({"success": True, "is_private": room.is_private})
+    try:
+        with transaction.atomic():
+            if make_private:
+                # Auto-generate code instead of requiring user input
+                code = room.generate_private_code()
+                room.is_private = True
+                room.password = code
+            else:
+                room.is_private = False
+                room.password = None
+
+            room.save()
+            room.refresh_from_db()  # Ensure we have latest state
+
+        return JsonResponse(
+            {
+                "success": True,
+                "is_private": room.is_private,
+                "code": room.password if room.is_private else None,
+            }
+        )
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
 @login_required

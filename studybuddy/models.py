@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 import uuid
+import secrets
+import string
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models.signals import post_save
@@ -43,6 +45,8 @@ class Room(models.Model):
     description = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="rooms")
     created_at = models.DateTimeField(auto_now_add=True)
+    is_private = models.BooleanField(default=False)
+    password = models.CharField(max_length=128, blank=True, null=True)
 
     # Pomodoro Timer Fields
     timer_started_at = models.DateTimeField(null=True, blank=True)
@@ -83,6 +87,33 @@ class Room(models.Model):
             "duration": self.timer_duration,
         }
 
+    def generate_private_code(self):
+        """Generate a unique, easy-to-share code for private room access"""
+        # Generate a 6-character code using uppercase letters and numbers
+        code_length = 6
+        characters = string.ascii_uppercase + string.digits
+        # Exclude confusing characters (0, O, I, 1)
+        characters = (
+            characters.replace("0", "")
+            .replace("O", "")
+            .replace("I", "")
+            .replace("1", "")
+        )
+
+        max_attempts = 100
+        for _ in range(max_attempts):
+            code = "".join(secrets.choice(characters) for _ in range(code_length))
+            # Check if code is unique (not used by another private room)
+            if (
+                not Room.objects.filter(is_private=True, password=code)
+                .exclude(pk=self.pk)
+                .exists()
+            ):
+                return code
+
+        # Fallback: if we can't find a unique code, use a longer UUID-based code
+        return secrets.token_urlsafe(6).upper()[:8]
+
 
 class Message(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name="messages")
@@ -92,6 +123,43 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.user.username}: {self.content[:30]}"
+
+
+class RoomPresence(models.Model):
+    """Track active users in rooms"""
+
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name="presence")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    last_seen = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("room", "user")
+        indexes = [
+            models.Index(fields=["room", "last_seen"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} in {self.room.name}"
+
+    @classmethod
+    def get_active_users(cls, room, threshold_seconds=30):
+        """Get count of users active in the last threshold_seconds"""
+        cutoff_time = timezone.now() - timedelta(seconds=threshold_seconds)
+        return cls.objects.filter(room=room, last_seen__gte=cutoff_time).count()
+
+    @classmethod
+    def update_presence(cls, room, user):
+        """Update or create presence record for a user in a room"""
+        obj, created = cls.objects.update_or_create(
+            room=room, user=user, defaults={"last_seen": timezone.now()}
+        )
+        return obj
+
+    @classmethod
+    def cleanup_old_records(cls, days=1):
+        """Clean up presence records older than specified days"""
+        cutoff_time = timezone.now() - timedelta(days=days)
+        cls.objects.filter(last_seen__lt=cutoff_time).delete()
 
 
 # SIGNALS

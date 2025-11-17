@@ -1,36 +1,421 @@
 {% extends 'studybuddy/base.html' %}
 {% block title %}Study Rooms{% endblock %}
 {% block content %}
-<h1>Study Rooms</h1>
+<style>
+    .rooms-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
 
-<form method="POST" style="text-align:center;margin-bottom:30px;">
+    .create-room-form {
+        background: var(--bg-tertiary);
+        padding: 2rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+        border: 2px solid var(--border-color);
+        transition: all 0.3s ease;
+    }
+
+    .create-room-form:hover {
+        border-color: var(--accent-primary);
+        box-shadow: 0 8px 16px var(--shadow);
+    }
+
+    .form-row {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .form-row input,
+    .form-row textarea {
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .form-row textarea {
+        resize: vertical;
+        min-height: 60px;
+    }
+
+    .create-btn {
+        background: linear-gradient(135deg, var(--success), #047857);
+        color: white;
+        padding: 0.875rem 2rem;
+        border: none;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .create-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(5, 150, 105, 0.4);
+    }
+
+    .room-card {
+        background: var(--bg-tertiary);
+        padding: 1.5rem;
+        border-radius: 16px;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .room-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px var(--shadow);
+        border-color: var(--accent-primary);
+    }
+
+    .room-info {
+        flex: 1;
+    }
+
+    .room-name {
+        color: var(--accent-primary);
+        font-weight: 700;
+        font-size: 1.25rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        display: inline-block;
+        margin-bottom: 0.5rem;
+    }
+
+    .room-name:hover {
+        transform: translateX(5px);
+        text-decoration: underline;
+    }
+
+    .room-meta {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.5rem;
+    }
+
+    .room-meta i {
+        margin-right: 0.25rem;
+    }
+
+    .room-description {
+        color: var(--text-primary);
+        margin-top: 0.5rem;
+    }
+
+    .delete-btn {
+        background: linear-gradient(135deg, var(--danger), #b91c1c);
+        color: white;
+        padding: 0.625rem 1.25rem;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .delete-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+    }
+
+    .empty-state {
+        background: var(--bg-tertiary);
+        padding: 3rem 2rem;
+        border-radius: 16px;
+        text-align: center;
+        color: var(--text-secondary);
+        border: 2px dashed var(--border-color);
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .private-room-section {
+        margin-top: 3rem;
+        padding: 2rem;
+        background: linear-gradient(135deg, rgba(8, 145, 178, 0.1), rgba(6, 182, 212, 0.1));
+        border-radius: 16px;
+        border: 2px solid var(--accent-primary);
+    }
+
+    [data-theme="dark"] .private-room-section {
+        background: linear-gradient(135deg, rgba(255, 107, 53, 0.1), rgba(255, 133, 85, 0.1));
+    }
+
+    .private-room-section h2 {
+        color: var(--accent-primary);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .private-room-section p {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+    }
+
+    .join-form {
+        display: flex;
+        gap: 1rem;
+        align-items: stretch;
+    }
+
+    .join-form input {
+        flex: 1;
+        padding: 1rem;
+        border-radius: 12px;
+        border: 2px solid var(--border-color);
+        font-size: 1.125rem;
+        font-weight: 600;
+        letter-spacing: 3px;
+        text-align: center;
+        text-transform: uppercase;
+    }
+
+    .join-btn {
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
+        color: white;
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .join-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px var(--shadow);
+    }
+
+    @media (max-width: 768px) {
+        .room-card {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .join-form {
+            flex-direction: column;
+        }
+
+        .form-row {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="rooms-header">
+    <h1><i class="fas fa-users"></i> Study Rooms</h1>
+</div>
+
+<form id="create-room-form" method="POST" class="create-room-form">
     {% csrf_token %}
-    <input type="text" name="name" placeholder="Room name" required style="padding:10px;width:40%;border-radius:8px;border:1px solid #ccc;margin-right:10px;">
-    <textarea name="description" placeholder="Description (optional)" style="padding:10px;width:40%;border-radius:8px;border:1px solid #ccc;"></textarea>
-    <button type="submit" style="background-color:#16a34a;color:white;padding:10px 20px;border:none;border-radius:8px;margin-left:10px;cursor:pointer;">Create Room</button>
+    <div class="form-row">
+        <input type="text" name="name" placeholder="Room name" required>
+        <textarea name="description" placeholder="Description (optional)" rows="1"></textarea>
+    </div>
+    <button type="submit" class="create-btn">
+        <i class="fas fa-plus-circle"></i> Create Room
+    </button>
 </form>
 
-{% for room in rooms %}
-    <div style="background-color:#e5e7eb;padding:15px;border-radius:10px;margin-bottom:15px;display:flex;justify-content:space-between;align-items:center;">
-        <div style="flex:1;">
-            <a href="{% url 'studybuddy:room_detail' room.id %}" style="color:#2563eb;font-weight:bold;font-size:18px;text-decoration:none;">{{ room.name }}</a><br>
-            <span style="color:#555;font-size:0.9em;">Created by: {{ room.created_by.username }} | {{ room.created_at|date:"M d, Y" }}</span><br>
-            <span style="color:#333;">{{ room.description }}</span>
-        </div>
-        {% if room.created_by == request.user %}
-        <div>
-            <a href="{% url 'studybuddy:room_delete' room.id %}" 
-               style="background-color:#dc2626;color:white;padding:8px 16px;border-radius:8px;text-decoration:none;font-size:14px;">
-                Delete
+<div id="rooms-container">
+    {% for room in rooms %}
+        <div class="room-card" data-room-id="{{ room.id }}">
+            <div class="room-info">
+                <a href="{% url 'studybuddy:room_detail' room.id %}" class="room-name">
+                    {{ room.name }}
+                </a>
+                <div class="room-meta">
+                    <span><i class="fas fa-user"></i> {{ room.created_by.username }}</span>
+                    <span><i class="fas fa-calendar"></i> {{ room.created_at|date:"M d, Y" }}</span>
+                </div>
+                <div class="room-description">{{ room.description }}</div>
+            </div>
+            {% if room.created_by == request.user %}
+            <a href="{% url 'studybuddy:room_delete' room.id %}" class="delete-btn">
+                <i class="fas fa-trash-alt"></i> Delete
             </a>
+            {% endif %}
         </div>
-        {% endif %}
-    </div>
-{% empty %}
-    <div style="background-color:#e5e7eb;padding:15px;border-radius:10px;">
-        <p>No rooms yet. Create one above!</p>
-    </div>
-{% endfor %}
+    {% empty %}
+        <div class="empty-state">
+            <i class="fas fa-door-open"></i>
+            <p>No public rooms yet. Create one above!</p>
+        </div>
+    {% endfor %}
+</div>
+
+<div class="private-room-section">
+    <h2><i class="fas fa-lock"></i> Join Private Room</h2>
+    <p>Enter a room code to join a private study room.</p>
+    <form method="POST" action="{% url 'studybuddy:join_private_room' %}" class="join-form">
+        {% csrf_token %}
+        <input type="text" 
+               name="room_code" 
+               placeholder="ENTER CODE" 
+               required 
+               maxlength="10"
+               pattern="[A-Z0-9]+"
+               title="Enter the room code (letters and numbers only)">
+        <button type="submit" class="join-btn">
+            <i class="fas fa-sign-in-alt"></i> Join Room
+        </button>
+    </form>
+</div>
+
+<script>
+// Auto-uppercase the room code input
+document.addEventListener('DOMContentLoaded', function() {
+    const codeInput = document.querySelector('input[name="room_code"]');
+    if (codeInput) {
+        codeInput.addEventListener('input', function(e) {
+            e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        });
+    }
+    
+    let roomsPollInterval = null;
+    
+    // Fetch rooms from server
+    async function fetchRooms() {
+        try {
+            const response = await fetch('/studybuddy/rooms/api/');
+            const data = await response.json();
+            updateRoomsList(data.rooms);
+        } catch (error) {
+            console.error('Error fetching rooms:', error);
+        }
+    }
+    
+    // Update rooms list display
+    function updateRoomsList(rooms) {
+        const existingRooms = document.querySelectorAll('[data-room-id]');
+        const existingIds = new Set(
+            Array.from(existingRooms).map(el => parseInt(el.getAttribute('data-room-id')))
+        );
+        const fetchedIds = new Set(rooms.map(room => room.id));
+        
+        // Remove rooms that no longer exist or became private
+        existingIds.forEach(roomId => {
+            if (!fetchedIds.has(roomId)) {
+                const roomElement = document.querySelector(`[data-room-id="${roomId}"]`);
+                if (roomElement) {
+                    roomElement.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => roomElement.remove(), 300);
+                }
+            }
+        });
+        
+        // Add new rooms that don't exist yet
+        rooms.forEach(room => {
+            if (!existingIds.has(room.id)) {
+                addRoomToDOM(room);
+            }
+        });
+        
+        // Update empty state
+        const roomsList = document.querySelectorAll('[data-room-id]');
+        const emptyDiv = document.querySelector('.empty-state');
+        const container = document.getElementById('rooms-container');
+        
+        if (rooms.length === 0 && !emptyDiv) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.className = 'empty-state';
+            emptyMsg.innerHTML = '<i class="fas fa-door-open"></i><p>No public rooms yet. Create one above!</p>';
+            container.appendChild(emptyMsg);
+        } else if (rooms.length > 0 && emptyDiv) {
+            emptyDiv.remove();
+        }
+    }
+    
+    // Add a single room to the DOM
+    function addRoomToDOM(room) {
+        const container = document.getElementById('rooms-container');
+        const emptyMsg = document.querySelector('.empty-state');
+        
+        // Remove empty message if it exists
+        if (emptyMsg) {
+            emptyMsg.remove();
+        }
+        
+        const roomDiv = document.createElement('div');
+        roomDiv.setAttribute('data-room-id', room.id);
+        roomDiv.className = 'room-card';
+        roomDiv.style.animation = 'slideIn 0.3s ease';
+        
+        const deleteButton = room.is_creator ? `
+            <a href="/studybuddy/room/${room.id}/delete/" class="delete-btn">
+                <i class="fas fa-trash-alt"></i> Delete
+            </a>` : '';
+        
+        const createdDate = new Date(room.created_at).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+        
+        roomDiv.innerHTML = `
+            <div class="room-info">
+                <a href="/studybuddy/room/${room.id}/" class="room-name">${escapeHtml(room.name)}</a>
+                <div class="room-meta">
+                    <span><i class="fas fa-user"></i> ${escapeHtml(room.created_by)}</span>
+                    <span><i class="fas fa-calendar"></i> ${createdDate}</span>
+                </div>
+                <div class="room-description">${escapeHtml(room.description)}</div>
+            </div>
+            ${deleteButton}
+        `;
+        
+        // Insert at the beginning of the container
+        container.insertBefore(roomDiv, container.firstChild);
+    }
+    
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // Initial fetch
+    fetchRooms();
+    
+    // Poll for room updates every 2 seconds
+    roomsPollInterval = setInterval(fetchRooms, 2000);
+    
+    // Clean up polling when leaving page
+    window.addEventListener('beforeunload', () => {
+        if (roomsPollInterval) {
+            clearInterval(roomsPollInterval);
+        }
+    });
+});
+</script>
 {% endblock %}
 
 

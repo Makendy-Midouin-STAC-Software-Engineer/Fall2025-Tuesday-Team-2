@@ -111,6 +111,7 @@ class RoomAdmin(admin.ModelAdmin):
     list_display = [
         "name",
         "created_by",
+        "is_private",
         "created_at",
         "message_count",
         "timer_is_running",
@@ -124,6 +125,10 @@ class RoomAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ("Room Information", {"fields": ("name", "description", "created_by")}),
+        (
+            "Privacy Settings",
+            {"fields": ("is_private", "password")},
+        ),
         (
             "Pomodoro Timer",
             {

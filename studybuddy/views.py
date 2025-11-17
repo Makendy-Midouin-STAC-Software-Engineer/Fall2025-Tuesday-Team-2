@@ -17,6 +17,8 @@ from django.contrib.auth.tokens import default_token_generator
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+from django.db import transaction
+from datetime import timedelta
 
 from .forms import UserUpdateForm, ProfileUpdateForm
 
@@ -24,9 +26,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 
 
-import uuid
-
-from .models import Note, Room, Message, UserProfile
+from .models import Note, Room, Message, RoomPresence
 
 # -----------------------------
 # AUTHENTICATION VIEWS
@@ -229,16 +229,85 @@ def rooms(request):
             )
         return redirect("studybuddy:rooms")
 
-    all_rooms = Room.objects.all().order_by("-created_at")
+    # Only show public rooms in the list
+    all_rooms = Room.objects.filter(is_private=False).order_by("-created_at")
     return render(request, "studybuddy/rooms.html", {"rooms": all_rooms})
+
+
+@login_required
+def get_rooms(request):
+    """Get public rooms in JSON format for real-time updates"""
+    all_rooms = Room.objects.filter(is_private=False).order_by("-created_at")
+
+    rooms_data = []
+    for room in all_rooms:
+        rooms_data.append(
+            {
+                "id": room.id,
+                "name": room.name,
+                "description": room.description or "",
+                "created_by": room.created_by.username,
+                "created_at": room.created_at.isoformat(),
+                "is_creator": room.created_by.id == request.user.id,
+            }
+        )
+
+    return JsonResponse({"rooms": rooms_data})
+
+
+@login_required
+def join_private_room(request):
+    """Handle joining a private room by code"""
+    if request.method == "POST":
+        code = request.POST.get("room_code", "").strip().upper()
+
+        if not code:
+            messages.error(request, "Please enter a room code.")
+            return redirect("studybuddy:rooms")
+
+        # Find the private room with this code
+        try:
+            room = Room.objects.get(is_private=True, password=code)
+            # Grant session access to this room
+            session_key = f"access_room_{room.id}"
+            request.session[session_key] = True
+            request.session.modified = True
+            messages.success(request, f"Successfully joined '{room.name}'!")
+            return redirect("studybuddy:room_detail", room_id=room.id)
+        except Room.DoesNotExist:
+            messages.error(request, "Invalid room code. Please check and try again.")
+            return redirect("studybuddy:rooms")
+
+    return redirect("studybuddy:rooms")
 
 
 @login_required
 def room_detail(request, room_id):
     room = get_object_or_404(Room, id=room_id)
+    user_is_creator = room.created_by_id == request.user.id
+    session_key = f"access_room_{room.id}"
+    has_session_access = request.session.get(session_key)
+
+    # --- Private room check ---
+    if room.is_private and not user_is_creator and not has_session_access:
+        error_message = None
+        if request.method == "POST" and "room_password" in request.POST:
+            submitted_password = request.POST.get("room_password", "")
+            if submitted_password and submitted_password == (room.password or ""):
+                request.session[session_key] = True
+                request.session.modified = True
+                return redirect("studybuddy:room_detail", room_id=room.id)
+            error_message = "Incorrect password."
+        return render(
+            request,
+            "studybuddy/room_password_prompt.html",
+            {"room": room, "error_message": error_message},
+        )
+
+    # --- Normal room logic ---
     room_messages = room.messages.order_by("timestamp")
 
-    if request.method == "POST":
+    if request.method == "POST" and "content" in request.POST:
         content = request.POST.get("content")
         if content:
             Message.objects.create(room=room, user=request.user, content=content)
@@ -246,6 +315,41 @@ def room_detail(request, room_id):
 
     context = {"room": room, "messages": room_messages}
     return render(request, "studybuddy/room_detail.html", context)
+
+
+@login_required
+@require_POST
+def set_privacy(request, room_id):
+    room = get_object_or_404(Room, id=room_id)
+
+    if room.created_by != request.user:
+        return JsonResponse({"success": False, "error": "Unauthorized"}, status=403)
+
+    make_private = request.POST.get("is_private", "").lower() in {"1", "true", "yes"}
+
+    try:
+        with transaction.atomic():
+            if make_private:
+                # Auto-generate code instead of requiring user input
+                code = room.generate_private_code()
+                room.is_private = True
+                room.password = code
+            else:
+                room.is_private = False
+                room.password = None
+
+            room.save()
+            room.refresh_from_db()  # Ensure we have latest state
+
+        return JsonResponse(
+            {
+                "success": True,
+                "is_private": room.is_private,
+                "code": room.password if room.is_private else None,
+            }
+        )
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
 
 
 @login_required
@@ -406,6 +510,30 @@ def send_message(request, room_id):
                 "is_own": True,
             },
         }
+    )
+
+
+@login_required
+def room_presence(request, room_id):
+    """Update user presence and return active user count"""
+    room = get_object_or_404(Room, id=room_id)
+
+    # Update current user's presence
+    RoomPresence.update_presence(room, request.user)
+
+    # Get active users count (active in last 30 seconds)
+    active_count = RoomPresence.get_active_users(room, threshold_seconds=30)
+
+    # Get list of active usernames (optional, for displaying who's online)
+    cutoff_time = timezone.now() - timedelta(seconds=30)
+    active_users = (
+        RoomPresence.objects.filter(room=room, last_seen__gte=cutoff_time)
+        .select_related("user")
+        .values_list("user__username", flat=True)
+    )
+
+    return JsonResponse(
+        {"active_count": active_count, "active_users": list(active_users)}
     )
 
 

@@ -2,20 +2,17 @@
 source = .
 omit = 
     */tests.py
-    */migrations/*
+    */test_*.py
     */__pycache__/*
+    */migrations/*
     */venv/*
     */env/*
-    */virtualenv/*
-    */manage.py
-    */settings/*
-    */wsgi.py
-    */asgi.py
+    */.venv/*
+    create_superuser.py
+    manage.py
+    */admin.py
 
 [report]
-precision = 2
-show_missing = True
-skip_covered = False
 exclude_lines =
     pragma: no cover
     def __repr__
@@ -24,6 +21,3 @@ exclude_lines =
     if __name__ == .__main__.:
     if TYPE_CHECKING:
     @abstractmethod
-
-
-

@@ -971,3 +971,160 @@ class AdditionalCoverageTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 200)  # Shows error
+
+
+# ------------------------
+# Room Presence tests
+# ------------------------
+class RoomPresenceTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user1 = create_user(username="user1", password="password123")
+        self.user2 = create_user(username="user2", password="password123")
+        self.client.login(username="user1", password="password123")
+        self.room = Room.objects.create(name="TestRoom", created_by=self.user1)
+
+    def test_room_presence_update(self):
+        """Test that room_presence endpoint updates presence and returns count"""
+        response = self.client.get(
+            reverse("studybuddy:room_presence", kwargs={"room_id": self.room.id})
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("active_count", data)
+        self.assertIn("active_users", data)
+        self.assertEqual(data["active_count"], 1)
+        self.assertIn("user1", data["active_users"])
+
+    def test_room_presence_multiple_users(self):
+        """Test room presence with multiple users"""
+        # User 1 updates presence
+        self.client.get(
+            reverse("studybuddy:room_presence", kwargs={"room_id": self.room.id})
+        )
+
+        # User 2 logs in and updates presence
+        client2 = Client()
+        client2.login(username="user2", password="password123")
+        response = client2.get(
+            reverse("studybuddy:room_presence", kwargs={"room_id": self.room.id})
+        )
+
+        data = response.json()
+        self.assertEqual(data["active_count"], 2)
+        self.assertIn("user1", data["active_users"])
+        self.assertIn("user2", data["active_users"])
+
+    def test_room_presence_requires_login(self):
+        """Test that room presence requires authentication"""
+        self.client.logout()
+        response = self.client.get(
+            reverse("studybuddy:room_presence", kwargs={"room_id": self.room.id})
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects to login
+
+
+# ------------------------
+# Home View tests
+# ------------------------
+class HomeViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = create_user()
+
+    def test_home_view_authenticated(self):
+        """Test home view for authenticated users"""
+        self.client.login(username="testuser", password="password123")
+        response = self.client.get(reverse("studybuddy:home"))
+        self.assertIn(response.status_code, [200, 302])
+
+    def test_home_view_unauthenticated(self):
+        """Test home view for unauthenticated users"""
+        response = self.client.get(reverse("studybuddy:home"))
+        self.assertIn(response.status_code, [200, 302])
+
+
+# ------------------------
+# Admin tests
+# ------------------------
+class AdminTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin_user = User.objects.create_superuser(
+            username="admin", email="admin@test.com", password="adminpass"
+        )
+        self.client.login(username="admin", password="adminpass")
+        self.user = create_user()
+        self.room = Room.objects.create(name="TestRoom", created_by=self.user)
+
+    def test_admin_site_accessible(self):
+        """Test that admin site is accessible to superuser"""
+        response = self.client.get("/admin/")
+        self.assertEqual(response.status_code, 200)
+
+    def test_user_profile_admin(self):
+        """Test UserProfile in admin"""
+        response = self.client.get("/admin/studybuddy/userprofile/")
+        self.assertEqual(response.status_code, 200)
+
+    def test_note_admin(self):
+        """Test Note in admin"""
+        response = self.client.get("/admin/studybuddy/note/")
+        self.assertEqual(response.status_code, 200)
+
+    def test_room_admin(self):
+        """Test Room in admin"""
+        response = self.client.get("/admin/studybuddy/room/")
+        self.assertEqual(response.status_code, 200)
+
+    def test_message_admin(self):
+        """Test Message in admin"""
+        response = self.client.get("/admin/studybuddy/message/")
+        self.assertEqual(response.status_code, 200)
+
+
+# ------------------------
+# Additional Model tests for coverage
+# ------------------------
+class ModelStringTests(TestCase):
+    def setUp(self):
+        self.user = create_user()
+
+    def test_note_str(self):
+        """Test Note __str__ method"""
+        note = Note.objects.create(user=self.user, title="Test Note", content="Content")
+        self.assertEqual(str(note), "Test Note")
+
+    def test_room_generate_code_fallback(self):
+        """Test Room generate_private_code fallback"""
+        room = Room.objects.create(name="TestRoom", created_by=self.user)
+        # Generate multiple codes to test uniqueness
+        code1 = room.generate_private_code()
+        code2 = room.generate_private_code()
+        self.assertIsNotNone(code1)
+        self.assertIsNotNone(code2)
+        # Codes should be uppercase and reasonable length
+        self.assertTrue(code1.isupper())
+        self.assertGreaterEqual(len(code1), 6)
+
+    def test_room_presence_model_methods(self):
+        """Test RoomPresence model methods"""
+        from studybuddy.models import RoomPresence
+
+        room = Room.objects.create(name="TestRoom", created_by=self.user)
+
+        # Test update_presence
+        RoomPresence.update_presence(room, self.user)
+        self.assertTrue(RoomPresence.objects.filter(room=room, user=self.user).exists())
+
+        # Test get_active_users
+        active_count = RoomPresence.get_active_users(room, threshold_seconds=30)
+        self.assertEqual(active_count, 1)
+
+    def test_user_profile_token_expired(self):
+        """Test UserProfile is_token_valid when expired"""
+        profile = UserProfile.objects.get(user=self.user)
+        # Set token_created_at to over 24 hours ago
+        profile.token_created_at = timezone.now() - timedelta(hours=25)
+        profile.save()
+        self.assertFalse(profile.is_token_valid())

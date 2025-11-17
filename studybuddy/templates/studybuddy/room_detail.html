@@ -3,21 +3,28 @@
 {% block content %}
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
     <h2 style="margin:0;">{{ room.name }}</h2>
-    {% if room.created_by == request.user %}
-    <a href="{% url 'studybuddy:room_delete' room.id %}" 
-       style="background-color:#dc2626;color:white;padding:8px 16px;border-radius:8px;text-decoration:none;font-size:14px;">
-        Delete Room
-    </a>
-    {% endif %}
+    <div style="display:flex;align-items:center;gap:15px;">
+        <div id="active-users-badge" style="background:linear-gradient(135deg, var(--accent-primary), var(--accent-hover));color:white;padding:8px 16px;border-radius:20px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 2px 8px var(--shadow);">
+            <i class="fas fa-users"></i>
+            <span id="active-user-count">1</span>
+            <span>online</span>
+        </div>
+        {% if room.created_by == request.user %}
+        <a href="{% url 'studybuddy:room_delete' room.id %}" 
+           style="background-color:#dc2626;color:white;padding:8px 16px;border-radius:8px;text-decoration:none;font-size:14px;">
+            Delete Room
+        </a>
+        {% endif %}
+    </div>
 </div>
 
 {% if room.created_by == request.user %}
-<div id="privacy-controls" style="margin-bottom:20px;padding:15px;background-color:#eef2ff;border-radius:10px;">
-    <p id="privacy-status" style="margin:0 0 10px 0;color:#1e3a8a;">
+<div id="privacy-controls" style="margin-bottom:20px;padding:15px;background-color:var(--bg-tertiary);border-radius:10px;border:2px solid var(--border-color);">
+    <p id="privacy-status" style="margin:0 0 10px 0;color:var(--text-primary);">
         This room is currently <strong>{% if room.is_private %}private{% else %}public{% endif %}</strong>.
         {% if room.is_private and room.password %}
-        <br><span style="font-size:0.9em;color:#059669;margin-top:8px;display:inline-block;">
-            Room Code: <strong style="font-size:1.2em;letter-spacing:2px;background-color:#d1fae5;padding:4px 8px;border-radius:4px;">{{ room.password }}</strong>
+        <br><span style="font-size:0.9em;color:var(--success);margin-top:8px;display:inline-block;">
+            Room Code: <strong style="font-size:1.2em;letter-spacing:2px;background-color:var(--bg-tertiary);padding:4px 8px;border-radius:4px;border:2px solid var(--success);">{{ room.password }}</strong>
         </span>
         {% endif %}
     </p>
@@ -39,13 +46,13 @@
     <div style="flex:2;">
         <div id="chat-messages" style="border:1px solid #ddd;padding:15px;border-radius:8px;height:400px;overflow-y:auto;margin-bottom:15px;">
             {% for message in messages %}
-                <div data-message-id="{{ message.id }}" data-timestamp-iso="{{ message.timestamp|date:'c' }}" style="margin-bottom:15px;padding:10px 15px;border-radius:10px;max-width:70%;word-wrap:break-word;position:relative;
-                    {% if message.user == request.user %}background-color:#2563eb;color:white;margin-left:auto;{% else %}background-color:#e5e7eb;color:#111;{% endif %}">
+                <div data-message-id="{{ message.id }}" data-timestamp-iso="{{ message.timestamp|date:'c' }}" style="margin-bottom:15px;padding:10px 15px;border-radius:10px;max-width:70%;word-wrap:break-word;overflow-wrap:break-word;word-break:break-word;position:relative;
+                    {% if message.user == request.user %}background:linear-gradient(135deg, var(--accent-primary), var(--accent-hover));color:white;margin-left:auto;{% else %}background-color:var(--bg-tertiary);color:var(--text-primary);{% endif %}">
                     <div style="display:flex;justify-content:space-between;align-items:start;">
                         <div style="flex:1;">
                             <strong>{{ message.user.username }}</strong><br>
                             {{ message.content }}
-                            <div class="message-timestamp" style="font-size:0.8em;{% if message.user == request.user %}color:#e0e0e0;{% else %}color:#555;{% endif %}margin-top:4px;">
+                            <div class="message-timestamp" style="font-size:0.8em;{% if message.user == request.user %}color:rgba(255,255,255,0.8);{% else %}color:var(--text-secondary);{% endif %}margin-top:4px;">
                                 {{ message.timestamp|date:"M d, Y H:i" }}
                             </div>
                         </div>
@@ -67,58 +74,115 @@
         <form id="message-form" style="display:flex;align-items:center;">
             {% csrf_token %}
             <textarea id="message-input" name="content" rows="2" placeholder="Type your message..." required
-                      style="flex:1;resize:none;padding:10px;border-radius:8px;border:1px solid #ccc;font-family:inherit;"></textarea>
+                      maxlength="1000"
+                      style="flex:1;resize:none;padding:10px;border-radius:8px;border:1px solid var(--border-color);font-family:inherit;word-wrap:break-word;overflow-wrap:break-word;background-color:var(--bg-tertiary);color:var(--text-primary);"></textarea>
             <button type="submit"
-                    style="background-color:#2563eb;border:none;color:white;padding:10px 20px;border-radius:8px;margin-left:10px;cursor:pointer;">
+                    style="background:linear-gradient(135deg, var(--accent-primary), var(--accent-hover));border:none;color:white;padding:10px 20px;border-radius:8px;margin-left:10px;cursor:pointer;transition:all 0.3s ease;">
                 Send
             </button>
         </form>
+        <div id="char-counter" style="font-size:0.85em;color:var(--text-secondary);margin-top:5px;text-align:right;">
+            <span id="current-chars">0</span>/1000 characters
+        </div>
     </div>
 
     <!-- Pomodoro Timer Section -->
     <div style="flex:1;min-width:250px;">
-        <div style="border:1px solid #ddd;padding:20px;border-radius:8px;background-color:#f8f9fa;">
-            <h3 style="margin-top:0;text-align:center;color:#333;">Pomodoro Timer</h3>
+        <div style="border:2px solid var(--border-color);padding:20px;border-radius:8px;background-color:var(--bg-tertiary);">
+            <h3 style="margin-top:0;text-align:center;color:var(--text-primary);">Pomodoro Timer</h3>
             {% if room.created_by != request.user %}
-            <div style="background-color:#fef3c7;padding:8px;border-radius:6px;margin-bottom:15px;text-align:center;font-size:12px;color:#92400e;">
+            <div style="background-color:var(--warning);padding:8px;border-radius:6px;margin-bottom:15px;text-align:center;font-size:12px;color:var(--bg-primary);opacity:0.9;">
                 Only {{ room.created_by.username }} (room creator) can control the timer
             </div>
             {% endif %}
             
-            <div id="timer-display" style="font-size:48px;font-weight:bold;text-align:center;margin:20px 0;color:#2563eb;">
+            <!-- Timer Character -->
+            <div style="text-align:center;margin:10px 0;">
+                <svg id="timer-character" class="character" width="70" height="82" viewBox="0 0 120 140" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
+                    <!-- Head (clock face) -->
+                    <circle cx="60" cy="40" r="25" fill="#87CEEB" stroke="#4682B4" stroke-width="3"/>
+                    <circle cx="60" cy="40" r="20" fill="white"/>
+                    
+                    <!-- Clock markings -->
+                    <circle cx="60" cy="28" r="2" fill="#4682B4"/>
+                    <circle cx="72" cy="40" r="2" fill="#4682B4"/>
+                    <circle cx="60" cy="52" r="2" fill="#4682B4"/>
+                    <circle cx="48" cy="40" r="2" fill="#4682B4"/>
+                    
+                    <!-- Headband -->
+                    <g class="headband">
+                        <ellipse cx="60" cy="22" rx="28" ry="4" fill="#FF4500"/>
+                        <circle cx="75" cy="22" r="4" fill="#FFD700"/>
+                    </g>
+                    
+                    <!-- Happy eyes -->
+                    <path d="M 53 36 Q 55 34 57 36" stroke="#000" stroke-width="2" fill="none"/>
+                    <path d="M 63 36 Q 65 34 67 36" stroke="#000" stroke-width="2" fill="none"/>
+                    
+                    <!-- Big smile -->
+                    <path d="M 50 44 Q 60 50 70 44" stroke="#FF6347" stroke-width="2" fill="none"/>
+                    
+                    <!-- Body -->
+                    <rect x="45" y="62" width="30" height="35" rx="8" fill="#87CEEB"/>
+                    
+                    <!-- Arms -->
+                    <g id="left-arm">
+                        <ellipse cx="37" cy="75" rx="5" ry="20" fill="#87CEEB"/>
+                        <circle cx="35" cy="92" r="6" fill="#FFB6C1"/>
+                        <text x="33" y="95" font-size="10">💪</text>
+                    </g>
+                    <g id="right-arm">
+                        <ellipse cx="83" cy="75" rx="5" ry="20" fill="#87CEEB"/>
+                        <circle cx="85" cy="92" r="6" fill="#FFB6C1"/>
+                        <text x="83" y="95" font-size="10">💪</text>
+                    </g>
+                    
+                    <!-- Legs -->
+                    <g id="left-leg">
+                        <rect x="48" y="97" width="8" height="25" rx="4" fill="#87CEEB"/>
+                        <ellipse cx="52" cy="125" rx="9" ry="5" fill="#000"/>
+                    </g>
+                    <g id="right-leg">
+                        <rect x="64" y="97" width="8" height="25" rx="4" fill="#87CEEB"/>
+                        <ellipse cx="68" cy="125" rx="9" ry="5" fill="#000"/>
+                    </g>
+                </svg>
+            </div>
+            
+            <div id="timer-display" style="font-size:48px;font-weight:bold;text-align:center;margin:10px 0;color:var(--accent-primary);">
                 25:00
             </div>
             
             <div style="text-align:center;margin-bottom:15px;">
-                <span id="timer-mode" style="font-size:16px;color:#666;">Work Session</span>
+                <span id="timer-mode" style="font-size:16px;color:var(--text-secondary);">Work Session</span>
             </div>
             
             {% if room.created_by == request.user %}
             <div style="display:flex;flex-direction:column;gap:10px;">
                 <button id="start-btn" onclick="startTimer()" 
-                        style="background-color:#16a34a;color:white;padding:12px;border:none;border-radius:8px;cursor:pointer;font-size:16px;">
+                        style="background:linear-gradient(135deg, var(--success), #047857);color:white;padding:12px;border:none;border-radius:8px;cursor:pointer;font-size:16px;transition:all 0.3s ease;">
                     Start
                 </button>
                 <button id="pause-btn" onclick="pauseTimer()" 
-                        style="background-color:#f59e0b;color:white;padding:12px;border:none;border-radius:8px;cursor:pointer;font-size:16px;display:none;">
+                        style="background:linear-gradient(135deg, var(--warning), #d97706);color:white;padding:12px;border:none;border-radius:8px;cursor:pointer;font-size:16px;display:none;transition:all 0.3s ease;">
                     Pause
                 </button>
                 <button onclick="resetTimer()" 
-                        style="background-color:#6b7280;color:white;padding:12px;border:none;border-radius:8px;cursor:pointer;font-size:16px;">
+                        style="background:linear-gradient(135deg, #6b7280, #4b5563);color:white;padding:12px;border:none;border-radius:8px;cursor:pointer;font-size:16px;transition:all 0.3s ease;">
                     Reset
                 </button>
             </div>
             {% else %}
-            <div style="text-align:center;padding:12px;background-color:#e5e7eb;border-radius:8px;color:#666;font-size:14px;">
+            <div style="text-align:center;padding:12px;background-color:var(--bg-secondary);border-radius:8px;color:var(--text-secondary);font-size:14px;border:1px solid var(--border-color);">
                 Timer controlled by room creator
             </div>
             {% endif %}
             
-            <div style="margin-top:15px;padding:10px;background-color:#e5e7eb;border-radius:8px;font-size:14px;">
-                <strong>Settings:</strong><br>
-                Work: 25 min<br>
-                Break: 5 min<br>
-                <div style="margin-top:5px;font-size:12px;color:#666;">
+            <div style="margin-top:15px;padding:10px;background-color:var(--bg-secondary);border-radius:8px;font-size:14px;border:1px solid var(--border-color);">
+                <strong style="color:var(--text-primary);">Settings:</strong><br>
+                <span style="color:var(--text-primary);">Work: 25 min<br>
+                Break: 5 min</span><br>
+                <div style="margin-top:5px;font-size:12px;color:var(--text-secondary);">
                     <em>Synced across all users in room</em>
                 </div>
             </div>
@@ -131,6 +195,7 @@ const ROOM_ID = {{ room.id }};
 const IS_CREATOR = {{ room.created_by.id }} === {{ request.user.id }};
 let pollInterval = null;
 let messagePollInterval = null;
+let presencePollInterval = null;
 let lastMode = 'work';
 let lastMessageId = null;
 const privacyEndpoint = `/studybuddy/room/${ROOM_ID}/set_privacy/`;
@@ -233,10 +298,12 @@ async function updateRoomPrivacy(payload) {
         if (data.is_private && data.code) {
             roomIsPrivate = true;
             // Update the status to show the code
+            const successColor = getComputedStyle(document.documentElement).getPropertyValue('--success').trim();
+            const bgTertiary = getComputedStyle(document.documentElement).getPropertyValue('--bg-tertiary').trim();
             if (privacyStatus) {
                 privacyStatus.innerHTML = `This room is currently <strong>private</strong>.<br>
-                    <span style="font-size:0.9em;color:#059669;margin-top:8px;display:inline-block;">
-                        Room Code: <strong style="font-size:1.2em;letter-spacing:2px;background-color:#d1fae5;padding:4px 8px;border-radius:4px;">${data.code}</strong>
+                    <span style="font-size:0.9em;color:${successColor};margin-top:8px;display:inline-block;">
+                        Room Code: <strong style="font-size:1.2em;letter-spacing:2px;background-color:${bgTertiary};padding:4px 8px;border-radius:4px;border:2px solid ${successColor};">${data.code}</strong>
                     </span>`;
             }
             if (privacySuccess) {
@@ -298,8 +365,29 @@ function updateTimerDisplay(state) {
     // Update mode
     const modeText = state.mode === 'work' ? 'Work Session' : 'Break Time';
     document.getElementById('timer-mode').textContent = modeText;
+    const accentPrimary = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary');
+    const success = getComputedStyle(document.documentElement).getPropertyValue('--success');
     document.getElementById('timer-display').style.color = 
-        state.mode === 'work' ? '#2563eb' : '#16a34a';
+        state.mode === 'work' ? accentPrimary : success;
+    
+    // Animate character based on timer state
+    const character = document.getElementById('timer-character');
+    if (character) {
+        if (state.is_running) {
+            character.classList.add('dancing');
+            character.classList.remove('celebrate');
+        } else {
+            character.classList.remove('dancing');
+        }
+        
+        // Celebrate when timer reaches 0
+        if (state.time_left === 0 && !character.classList.contains('celebrate')) {
+            character.classList.add('celebrate');
+            setTimeout(() => {
+                character.classList.remove('celebrate');
+            }, 1500);
+        }
+    }
     
     // Update button visibility (only for creator)
     if (IS_CREATOR) {
@@ -408,8 +496,123 @@ function playNotificationSound() {
     }
 }
 
+// Function to update presence and get active user count
+async function updatePresence() {
+    try {
+        const response = await fetch(`/studybuddy/room/${ROOM_ID}/presence/`);
+        const data = await response.json();
+        
+        // Update the count display
+        const countElement = document.getElementById('active-user-count');
+        if (countElement) {
+            countElement.textContent = data.active_count;
+        }
+        
+        // Optional: Add pulse animation when count > 1
+        const badge = document.getElementById('active-users-badge');
+        if (badge && data.active_count > 1) {
+            badge.style.animation = 'pulse 2s ease-in-out infinite';
+        } else if (badge) {
+            badge.style.animation = 'none';
+        }
+    } catch (error) {
+        console.error('Error updating presence:', error);
+    }
+}
+
 // Initialize everything when page loads
 window.addEventListener('DOMContentLoaded', () => {
+    // Add CSS animations for pulse effect and timer character
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes pulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 2px 8px var(--shadow);
+            }
+            50% { 
+                transform: scale(1.05);
+                box-shadow: 0 4px 12px var(--shadow);
+            }
+        }
+        
+        /* Peanut Butter Jelly Dance Animation */
+        @keyframes pbj-body {
+            0% { transform: translateX(-30px) rotate(-15deg) scaleX(0.9); }
+            25% { transform: translateX(-15px) rotate(-8deg) scaleX(0.95); }
+            50% { transform: translateX(30px) rotate(15deg) scaleX(0.9); }
+            75% { transform: translateX(15px) rotate(8deg) scaleX(0.95); }
+            100% { transform: translateX(-30px) rotate(-15deg) scaleX(0.9); }
+        }
+
+        @keyframes pbj-arms {
+            0% { transform: rotate(-90deg) translateX(-10px); }
+            25% { transform: rotate(-45deg) translateX(-5px); }
+            50% { transform: rotate(90deg) translateX(10px); }
+            75% { transform: rotate(45deg) translateX(5px); }
+            100% { transform: rotate(-90deg) translateX(-10px); }
+        }
+
+        @keyframes pbj-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @keyframes headband-bounce {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-2px) scale(1.05); }
+        }
+
+        /* Apply PBJ dance when timer is running */
+        #timer-character.dancing {
+            animation: pbj-body 1s ease-in-out infinite;
+        }
+
+        #timer-character.dancing #left-arm {
+            animation: pbj-arms 1s ease-in-out infinite;
+            transform-origin: 37px 75px;
+        }
+
+        #timer-character.dancing #right-arm {
+            animation: pbj-arms 1s ease-in-out infinite reverse;
+            transform-origin: 83px 75px;
+        }
+
+        #timer-character.dancing #left-leg {
+            animation: pbj-bounce 0.5s ease-in-out infinite;
+            transform-origin: bottom;
+        }
+
+        #timer-character.dancing #right-leg {
+            animation: pbj-bounce 0.5s ease-in-out infinite;
+            transform-origin: bottom;
+        }
+
+        #timer-character.dancing .headband {
+            animation: headband-bounce 0.5s ease-in-out infinite;
+        }
+        
+        /* Celebration animation when timer completes */
+        @keyframes celebrate {
+            0%, 100% { 
+                transform: scale(1) rotate(0deg);
+            }
+            25% { 
+                transform: scale(1.3) rotate(-15deg);
+            }
+            50% { 
+                transform: scale(1.3) rotate(0deg);
+            }
+            75% { 
+                transform: scale(1.3) rotate(15deg);
+            }
+        }
+        
+        #timer-character.celebrate {
+            animation: celebrate 0.5s ease-in-out 3;
+        }
+    `;
+    document.head.appendChild(style);
     // Request notification permission
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
@@ -425,6 +628,14 @@ window.addEventListener('DOMContentLoaded', () => {
     const messageForm = document.getElementById('message-form');
     const messageInput = document.getElementById('message-input');
     
+    if (messageInput) {
+        // Character counter
+        messageInput.addEventListener('input', () => {
+            const currentLength = messageInput.value.length;
+            document.getElementById('current-chars').textContent = currentLength;
+        });
+    }
+    
     if (messageForm) {
         messageForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -436,6 +647,7 @@ window.addEventListener('DOMContentLoaded', () => {
             
             // Clear input immediately for better UX
             messageInput.value = '';
+            document.getElementById('current-chars').textContent = '0';
             
             // Send message
             await sendMessage(content);
@@ -462,6 +674,12 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // Poll for new messages every 1.5 seconds
     messagePollInterval = setInterval(fetchMessages, 1500);
+    
+    // Initial presence update
+    updatePresence();
+    
+    // Poll for presence updates every 5 seconds
+    presencePollInterval = setInterval(updatePresence, 5000);
 });
 
 // Clean up polling when leaving page
@@ -471,6 +689,9 @@ window.addEventListener('beforeunload', () => {
     }
     if (messagePollInterval) {
         clearInterval(messagePollInterval);
+    }
+    if (presencePollInterval) {
+        clearInterval(presencePollInterval);
     }
 });
 
@@ -579,8 +800,12 @@ function addMessageToChat(msg) {
     messageDiv.setAttribute('data-message-id', msg.id);
     
     const isOwn = msg.is_own;
-    messageDiv.style.cssText = `margin-bottom:15px;padding:10px 15px;border-radius:10px;max-width:70%;word-wrap:break-word;position:relative;
-        ${isOwn ? 'background-color:#2563eb;color:white;margin-left:auto;' : 'background-color:#e5e7eb;color:#111;'}`;
+    const accentPrimary = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim();
+    const accentHover = getComputedStyle(document.documentElement).getPropertyValue('--accent-hover').trim();
+    const bgTertiary = getComputedStyle(document.documentElement).getPropertyValue('--bg-tertiary').trim();
+    const textPrimary = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim();
+    messageDiv.style.cssText = `margin-bottom:15px;padding:10px 15px;border-radius:10px;max-width:70%;word-wrap:break-word;overflow-wrap:break-word;word-break:break-word;position:relative;
+        ${isOwn ? `background:linear-gradient(135deg, ${accentPrimary}, ${accentHover});color:white;margin-left:auto;` : `background-color:${bgTertiary};color:${textPrimary};`}`;
     
     let deleteButton = '';
     if (isOwn) {
@@ -595,13 +820,14 @@ function addMessageToChat(msg) {
     
     // Format timestamp to local timezone
     const formattedTimestamp = formatTimestamp(msg.timestamp);
+    const textSecondary = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim();
     
     messageDiv.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:start;">
             <div style="flex:1;">
                 <strong>${escapeHtml(msg.user)}</strong><br>
                 ${escapeHtml(msg.content)}
-                <div style="font-size:0.8em;${isOwn ? 'color:#e0e0e0;' : 'color:#555;'}margin-top:4px;">
+                <div style="font-size:0.8em;${isOwn ? 'color:rgba(255,255,255,0.8);' : `color:${textSecondary};`}margin-top:4px;">
                     ${escapeHtml(formattedTimestamp)}
                 </div>
             </div>
@@ -690,10 +916,13 @@ async function deleteMessage(messageId) {
     }
 }
 
-// Clean up message polling when leaving page
+// Clean up message and presence polling when leaving page
 window.addEventListener('beforeunload', () => {
     if (messagePollInterval) {
         clearInterval(messagePollInterval);
+    }
+    if (presencePollInterval) {
+        clearInterval(presencePollInterval);
     }
 });
 </script>

@@ -18,6 +18,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.db import transaction
+from datetime import timedelta
 
 from .forms import UserUpdateForm, ProfileUpdateForm
 
@@ -25,7 +26,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 
 
-from .models import Note, Room, Message
+from .models import Note, Room, Message, RoomPresence
 
 # -----------------------------
 # AUTHENTICATION VIEWS
@@ -509,6 +510,30 @@ def send_message(request, room_id):
                 "is_own": True,
             },
         }
+    )
+
+
+@login_required
+def room_presence(request, room_id):
+    """Update user presence and return active user count"""
+    room = get_object_or_404(Room, id=room_id)
+
+    # Update current user's presence
+    RoomPresence.update_presence(room, request.user)
+
+    # Get active users count (active in last 30 seconds)
+    active_count = RoomPresence.get_active_users(room, threshold_seconds=30)
+
+    # Get list of active usernames (optional, for displaying who's online)
+    cutoff_time = timezone.now() - timedelta(seconds=30)
+    active_users = (
+        RoomPresence.objects.filter(room=room, last_seen__gte=cutoff_time)
+        .select_related("user")
+        .values_list("user__username", flat=True)
+    )
+
+    return JsonResponse(
+        {"active_count": active_count, "active_users": list(active_users)}
     )
 
 

@@ -1,73 +1,197 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Home</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 50px auto;
-            padding: 20px;
+{% extends 'studybuddy/base.html' %}
+{% block content %}
+<style>
+    .welcome-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .welcome-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .profile-btn {
+        background: var(--accent-secondary);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .profile-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px var(--shadow);
+    }
+
+    .intro {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+    }
+
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .feature-card {
+        background: var(--bg-tertiary);
+        padding: 2rem;
+        border-radius: 16px;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px var(--shadow);
+        border-color: var(--accent-primary);
+    }
+
+    .feature-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .feature-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    .feature-card h3 {
+        color: var(--text-primary);
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .feature-card p {
+        color: var(--text-secondary);
+        margin-bottom: 1.25rem;
+        line-height: 1.6;
+    }
+
+    .feature-card a {
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .feature-card a:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 12px var(--shadow);
+    }
+
+    .logout-section {
+        text-align: center;
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 2px solid var(--border-color);
+    }
+
+    .logout-btn {
+        background: linear-gradient(135deg, var(--danger), #b91c1c);
+        color: white;
+        padding: 0.75rem 2rem;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .logout-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+    }
+
+    @media (max-width: 768px) {
+        .welcome-header {
+            flex-direction: column;
+            align-items: flex-start;
         }
-        .feature-card {
-            background-color: #f3f4f6;
-            padding: 20px;
-            margin: 15px 0;
-            border-radius: 10px;
+
+        .feature-grid {
+            grid-template-columns: 1fr;
         }
-        a {
-            display: inline-block;
-            background-color: #2563eb;
-            color: white;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 5px;
-            margin: 5px;
+
+        .welcome-title {
+            font-size: 2rem;
         }
-        a:hover {
-            background-color: #1d4ed8;
-        }
-        .logout-btn {
-            background-color: #dc2626;
-        }
-        .logout-btn:hover {
-            background-color: #b91c1c;
-        }
-        .edit-profile-btn {
-            background-color: #16a34a;
-        }
-        .edit-profile-btn:hover {
-            background-color: #15803d;
-        }
-        .header-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="header-section">
-        <h1>Welcome, {{ username }}!</h1>
-        <a href="{% url 'studybuddy:edit_profile' %}" class="edit-profile-btn">Edit Profile</a>
+    }
+</style>
+
+<div class="welcome-header">
+    <h1 class="welcome-title">👋 Welcome, {{ username }}!</h1>
+    <a href="{% url 'studybuddy:edit_profile' %}" class="profile-btn">
+        <i class="fas fa-user-edit"></i> Edit Profile
+    </a>
+</div>
+
+<p class="intro">Choose a feature to get started with your study session:</p>
+
+<div class="feature-grid">
+    <div class="feature-card">
+        <h3><i class="fas fa-sticky-note"></i> Notes</h3>
+        <p>Create, edit, and manage your study notes. Keep all your learning materials organized in one place.</p>
+        <a href="{% url 'studybuddy:note_list' %}">
+            Go to Notes <i class="fas fa-arrow-right"></i>
+        </a>
     </div>
-    <p>Choose a feature to get started:</p>
 
     <div class="feature-card">
-        <h3>📝 Notes</h3>
-        <p>Create, edit, and manage your study notes.</p>
-        <a href="{% url 'studybuddy:note_list' %}">Go to Notes</a>
+        <h3><i class="fas fa-users"></i> Study Rooms</h3>
+        <p>Join or create study rooms to collaborate with other students in real-time. Use the Pomodoro timer to stay focused.</p>
+        <a href="{% url 'studybuddy:rooms' %}">
+            Go to Rooms <i class="fas fa-arrow-right"></i>
+        </a>
     </div>
+</div>
 
-    <div class="feature-card">
-        <h3>💬 Study Rooms</h3>
-        <p>Join or create study rooms to chat with other students.</p>
-        <a href="{% url 'studybuddy:rooms' %}">Go to Rooms</a>
-    </div>
-
-    <div style="text-align: center; margin-top: 30px;">
-        <a href="{% url 'studybuddy:logout' %}" class="logout-btn">Logout</a>
-    </div>
-</body>
-</html>
+<div class="logout-section">
+    <a href="{% url 'studybuddy:logout' %}" class="logout-btn">
+        <i class="fas fa-sign-out-alt"></i> Logout
+    </a>
+</div>
+{% endblock %}

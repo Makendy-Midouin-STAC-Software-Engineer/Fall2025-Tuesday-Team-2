@@ -125,6 +125,43 @@ class Message(models.Model):
         return f"{self.user.username}: {self.content[:30]}"
 
 
+class RoomPresence(models.Model):
+    """Track active users in rooms"""
+
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name="presence")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    last_seen = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("room", "user")
+        indexes = [
+            models.Index(fields=["room", "last_seen"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} in {self.room.name}"
+
+    @classmethod
+    def get_active_users(cls, room, threshold_seconds=30):
+        """Get count of users active in the last threshold_seconds"""
+        cutoff_time = timezone.now() - timedelta(seconds=threshold_seconds)
+        return cls.objects.filter(room=room, last_seen__gte=cutoff_time).count()
+
+    @classmethod
+    def update_presence(cls, room, user):
+        """Update or create presence record for a user in a room"""
+        obj, created = cls.objects.update_or_create(
+            room=room, user=user, defaults={"last_seen": timezone.now()}
+        )
+        return obj
+
+    @classmethod
+    def cleanup_old_records(cls, days=1):
+        """Clean up presence records older than specified days"""
+        cutoff_time = timezone.now() - timedelta(days=days)
+        cls.objects.filter(last_seen__lt=cutoff_time).delete()
+
+
 # SIGNALS
 
 

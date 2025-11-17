@@ -1,22 +1,164 @@
 {% extends "studybuddy/base.html" %}
 
 {% block content %}
-<h1>Your Notes</h1>
+<style>
+    .notes-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
 
-<a href="{% url 'studybuddy:note_add' %}" class="btn btn-primary">+ Create New Note</a>
+    .note-card {
+        background: var(--bg-tertiary);
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
 
-<ul>
-  {% for note in notes %}
-    <li>
-      <strong>{{ note.title }}</strong> ({{ note.updated_at|date:"M d, Y H:i" }})
-      <br>
-      {{ note.content|truncatechars:100 }}
-      <br>
-      <a href="{% url 'studybuddy:note_edit' note.pk %}">Edit</a> |
-      <a href="{% url 'studybuddy:note_delete' note.pk %}">Delete</a>
-    </li>
-  {% empty %}
-    <p>No notes yet.</p>
-  {% endfor %}
-</ul>
+    .note-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px var(--shadow);
+        border-color: var(--accent-primary);
+    }
+
+    .note-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .note-date {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .note-content {
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        line-height: 1.6;
+    }
+
+    .note-actions {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .note-actions a {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .edit-link {
+        background: var(--accent-primary);
+        color: white;
+    }
+
+    .edit-link:hover {
+        background: var(--accent-hover);
+        transform: translateY(-2px);
+    }
+
+    .delete-link {
+        background: var(--danger);
+        color: white;
+    }
+
+    .delete-link:hover {
+        background: #b91c1c;
+        transform: translateY(-2px);
+    }
+
+    .empty-notes {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-secondary);
+        background: var(--bg-tertiary);
+        border-radius: 16px;
+        border: 2px dashed var(--border-color);
+    }
+
+    .empty-notes i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
+        .notes-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+</style>
+
+<div class="notes-header">
+    <h1><i class="fas fa-sticky-note"></i> Your Notes</h1>
+    <a href="{% url 'studybuddy:note_add' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Create New Note
+    </a>
+</div>
+
+{% for note in notes %}
+    <div class="note-card">
+        <div class="note-title">{{ note.title }}</div>
+        <div class="note-date">
+            <i class="fas fa-clock"></i> 
+            <span class="note-timestamp" data-timestamp-iso="{{ note.updated_at|date:'c' }}">
+                {{ note.updated_at|date:"M d, Y H:i" }}
+            </span>
+        </div>
+        <div class="note-content">{{ note.content|truncatechars:100 }}</div>
+        <div class="note-actions">
+            <a href="{% url 'studybuddy:note_edit' note.pk %}" class="edit-link">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+            <a href="{% url 'studybuddy:note_delete' note.pk %}" class="delete-link">
+                <i class="fas fa-trash"></i> Delete
+            </a>
+        </div>
+    </div>
+{% empty %}
+    <div class="empty-notes">
+        <i class="fas fa-book-open"></i>
+        <p>No notes yet. Create your first note!</p>
+    </div>
+{% endfor %}
+
+<script>
+// Convert note timestamps to local timezone
+document.addEventListener('DOMContentLoaded', () => {
+    const timestamps = document.querySelectorAll('.note-timestamp[data-timestamp-iso]');
+    timestamps.forEach(element => {
+        const isoString = element.getAttribute('data-timestamp-iso');
+        if (isoString) {
+            const date = new Date(isoString);
+            const formatted = date.toLocaleString('en-US', {
+                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                month: 'short',
+                day: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            element.textContent = formatted;
+        }
+    });
+});
+</script>
 {% endblock %}

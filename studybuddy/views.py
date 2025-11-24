@@ -218,13 +218,18 @@ class NoteDeleteView(LoginRequiredMixin, DeleteView):
     template_name = "studybuddy/note_confirm_delete.html"
     success_url = reverse_lazy("studybuddy:note_list")
 
+
 def note_detail(request, pk):
     note = get_object_or_404(Note, pk=pk)
     html = markdown.markdown(note.content, extensions=["fenced_code", "codehilite"])
-    return render(request, 'studybuddy/note_detail.html', {
-        'note': note,
-        'html': mark_safe(html),
-    })
+    return render(
+        request,
+        "studybuddy/note_detail.html",
+        {
+            "note": note,
+            "html": mark_safe(html),
+        },
+    )
 
 
 # -----------------------------
@@ -246,10 +251,14 @@ def rooms(request):
         return redirect("studybuddy:rooms")
 
     # Only show public rooms in the list
-    all_rooms = Room.objects.filter(
-        Q(is_private=False) |  # show public rooms
-        Q(created_by=request.user) # show rooms YOU created
-    ).distinct().order_by("-created_at")
+    all_rooms = (
+        Room.objects.filter(
+            Q(is_private=False)  # show public rooms
+            | Q(created_by=request.user)  # show rooms YOU created
+        )
+        .distinct()
+        .order_by("-created_at")
+    )
 
     # Add session-access rooms for private rooms
     session_rooms = []
@@ -260,9 +269,9 @@ def rooms(request):
             session_rooms.append(room)
 
     # Merge + dedupe
-    all_rooms = list({
-        room.id: room for room in list(all_rooms) + session_rooms
-    }.values())
+    all_rooms = list(
+        {room.id: room for room in list(all_rooms) + session_rooms}.values()
+    )
 
     return render(request, "studybuddy/rooms.html", {"rooms": all_rooms})
 
@@ -272,10 +281,11 @@ def get_rooms(request):
     """Get rooms visible to the user (public, created, or session-access private rooms)"""
 
     # Base: public OR created by user
-    base_rooms = Room.objects.filter(
-        Q(is_private=False) |
-        Q(created_by=request.user)
-    ).distinct().order_by("-created_at")
+    base_rooms = (
+        Room.objects.filter(Q(is_private=False) | Q(created_by=request.user))
+        .distinct()
+        .order_by("-created_at")
+    )
 
     # Add private rooms user has access to
     session_rooms = []
@@ -285,24 +295,27 @@ def get_rooms(request):
         if request.session.get(f"access_room_{room.id}", False):
             session_rooms.append(room)
 
-    all_rooms = list({
-        room.id: room for room in list(base_rooms) + session_rooms
-    }.values())
+    all_rooms = list(
+        {room.id: room for room in list(base_rooms) + session_rooms}.values()
+    )
 
     # Convert to JSON
     rooms_data = []
     for room in all_rooms:
-        rooms_data.append({
-            "id": room.id,
-            "name": room.name,
-            "description": room.description or "",
-            "created_by": room.created_by.username,
-            "created_at": room.created_at.isoformat(),
-            "is_creator": room.created_by_id == request.user.id,
-            "is_private": room.is_private,
-        })
+        rooms_data.append(
+            {
+                "id": room.id,
+                "name": room.name,
+                "description": room.description or "",
+                "created_by": room.created_by.username,
+                "created_at": room.created_at.isoformat(),
+                "is_creator": room.created_by_id == request.user.id,
+                "is_private": room.is_private,
+            }
+        )
 
     return JsonResponse({"rooms": rooms_data})
+
 
 @login_required
 def search_rooms(request):
@@ -310,8 +323,7 @@ def search_rooms(request):
 
     # Build base queryset (same visibility rules as rooms list)
     base_rooms = Room.objects.filter(
-        Q(is_private=False) |
-        Q(created_by=request.user)
+        Q(is_private=False) | Q(created_by=request.user)
     ).distinct()
 
     # Add session-access private rooms
@@ -322,30 +334,35 @@ def search_rooms(request):
         if request.session.get(f"access_room_{room.id}", False):
             session_rooms.append(room)
 
-    visible_rooms = list({
-        room.id: room for room in list(base_rooms) + session_rooms
-    }.values())
+    visible_rooms = list(
+        {room.id: room for room in list(base_rooms) + session_rooms}.values()
+    )
 
     # Apply search filter: name OR creator username
     if query:
         visible_rooms = [
-            r for r in visible_rooms
-            if query.lower() in r.name.lower() or
-               query.lower() in r.created_by.username.lower()
+            r
+            for r in visible_rooms
+            if query.lower() in r.name.lower()
+            or query.lower() in r.created_by.username.lower()
         ]
 
     # Serialize
-    rooms_data = [{
-        "id": r.id,
-        "name": r.name,
-        "description": r.description or "",
-        "created_by": r.created_by.username,
-        "created_at": r.created_at.isoformat(),
-        "is_creator": r.created_by_id == request.user.id,
-        "is_private": r.is_private,
-    } for r in visible_rooms]
+    rooms_data = [
+        {
+            "id": r.id,
+            "name": r.name,
+            "description": r.description or "",
+            "created_by": r.created_by.username,
+            "created_at": r.created_at.isoformat(),
+            "is_creator": r.created_by_id == request.user.id,
+            "is_private": r.is_private,
+        }
+        for r in visible_rooms
+    ]
 
     return JsonResponse({"rooms": rooms_data})
+
 
 @login_required
 def join_private_room(request):
@@ -694,8 +711,6 @@ def edit_profile(request):
     return render(request, "studybuddy/edit_profile.html", context)
 
 
-
 @login_required
 def profile(request):
     return render(request, "studybuddy/profile.html", {"user": request.user})
-

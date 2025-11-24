@@ -22,7 +22,6 @@ from datetime import timedelta
 from django.db.models import Q
 import markdown
 from django.utils.safestring import mark_safe
-from .models import Room
 
 from .forms import UserUpdateForm, ProfileUpdateForm
 

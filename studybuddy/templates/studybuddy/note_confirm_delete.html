@@ -1,10 +1,116 @@
 {% extends 'studybuddy/base.html' %}
+
 {% block content %}
-<h2>Delete Note</h2>
-<p>Are you sure you want to delete "{{ object.title }}"?</p>
-<form method="post">
-  {% csrf_token %}
-  <button type="submit">Yes, delete</button>
-</form>
-<a href="{% url 'studybuddy:note_list' %}">Cancel</a>
+
+<style>
+    .delete-container {
+        max-width: 900px;
+        margin: 3rem auto;
+        background: var(--bg-tertiary);
+        padding: 2.5rem 3rem;
+        border-radius: 18px;
+        border: 2px solid var(--border-color);
+        box-shadow: 0 10px 25px var(--shadow);
+    }
+
+    .delete-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 1.25rem;
+        color: var(--text-primary);
+    }
+
+    .delete-text {
+        font-size: 1.15rem;
+        color: var(--text-secondary);
+        margin-bottom: 2rem;
+    }
+
+    /* Shared large button base (matches Save / Back / Create buttons) */
+    .btn-large {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+
+        font-size: 1rem;
+        font-weight: 700;
+
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+
+        transition: 0.25s ease;
+    }
+
+    /* DELETE (red) */
+    .btn-danger {
+        background: rgba(239, 68, 68, 0.18);
+        border: 2px solid rgba(239, 68, 68, 0.45);
+        color: #ef4444 !important;
+    }
+
+    .btn-danger i {
+        color: #ef4444 !important;
+    }
+
+    .btn-danger:hover {
+        background: rgba(239, 68, 68, 0.28);
+        transform: translateY(-2px);
+    }
+
+    /* CANCEL (blue button from homepage) */
+    .btn-cancel {
+        background: #4369f1;
+        color: white !important;
+    }
+
+    .btn-cancel i {
+        color: white !important;
+    }
+
+    .btn-cancel:hover {
+        filter: brightness(1.1);
+        transform: translateY(-2px);
+    }
+
+    .delete-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+</style>
+
+<div class="delete-container">
+
+    <h2 class="delete-title">Delete Note</h2>
+
+    <p class="delete-text">
+        Are you sure you want to delete "<strong>{{ object.title }}</strong>"?
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="delete-actions">
+
+            <!-- DELETE -->
+            <button type="submit" class="btn-large btn-danger">
+                <i class="fas fa-trash"></i>
+                Yes, delete
+            </button>
+
+            <!-- CANCEL -->
+            <a href="{% url 'studybuddy:note_list' %}" class="btn-large btn-cancel">
+                <i class="fas fa-arrow-left"></i>
+                Cancel
+            </a>
+
+        </div>
+    </form>
+
+</div>
+
 {% endblock %}

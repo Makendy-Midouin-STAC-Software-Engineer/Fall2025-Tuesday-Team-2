@@ -54,6 +54,5 @@ urlpatterns = [
     # Real-time chat API
     path("room/<int:room_id>/messages/", views.get_messages, name="get_messages"),
     path("room/<int:room_id>/send-message/", views.send_message, name="send_message"),
-
-    path('admin/', admin.site.urls),
+    path("admin/", admin.site.urls),
 ]

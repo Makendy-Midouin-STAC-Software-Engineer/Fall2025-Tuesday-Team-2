@@ -47,6 +47,7 @@
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
         gap: 1.5rem;
+        margin-top: 2rem;
         margin-bottom: 2rem;
     }
 
@@ -146,6 +147,14 @@
         box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
     }
 
+    .content-subtitle {
+        margin-top: 0.75rem;
+        margin-bottom: 2.5rem;
+        font-size: 1.05rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+
     @media (max-width: 768px) {
         .welcome-header {
             flex-direction: column;
@@ -160,25 +169,40 @@
             font-size: 2rem;
         }
     }
+
+    .content-section {
+        margin-bottom: 3rem;
+        color: var(--text-primary);
+        max-width: 850px;
+        line-height: 1.65;
+    }
+
+    .content-section h1,
+    .content-section h2,
+    .content-section h3 {
+        color: var(--text-primary);
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .content-section ul,
+    .content-section ol {
+        padding-left: 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .content-section hr {
+        border: none;
+        border-top: 1px solid var(--border-color);
+        margin: 2rem 0;
+    }
 </style>
 
 <div class="welcome-header">
     <h1 class="welcome-title">👋 Welcome, {{ username }}!</h1>
-    <a href="{% url 'studybuddy:edit_profile' %}" class="profile-btn">
-        <i class="fas fa-user-edit"></i> Edit Profile
-    </a>
 </div>
 
-<p class="intro">Choose a feature to get started with your study session:</p>
-
 <div class="feature-grid">
-    <div class="feature-card">
-        <h3><i class="fas fa-sticky-note"></i> Notes</h3>
-        <p>Create, edit, and manage your study notes. Keep all your learning materials organized in one place.</p>
-        <a href="{% url 'studybuddy:note_list' %}">
-            Go to Notes <i class="fas fa-arrow-right"></i>
-        </a>
-    </div>
 
     <div class="feature-card">
         <h3><i class="fas fa-users"></i> Study Rooms</h3>
@@ -187,11 +211,124 @@
             Go to Rooms <i class="fas fa-arrow-right"></i>
         </a>
     </div>
+
+    <div class="feature-card">
+        <h3><i class="fas fa-sticky-note"></i> Notes</h3>
+        <p>Create, edit, and manage your study notes. Keep all your learning materials organized in one place.</p>
+        <a href="{% url 'studybuddy:note_list' %}">
+            Go to Notes <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+
 </div>
 
-<div class="logout-section">
-    <a href="{% url 'studybuddy:logout' %}" class="logout-btn">
-        <i class="fas fa-sign-out-alt"></i> Logout
-    </a>
+<div class="content-section">
+
+    <h1>What the Pomodoro Method Is:</h1>
+
+    <p>
+        The Pomodoro Method is a structured time-management system built around
+        short, focused work intervals separated by deliberate breaks. It was
+        developed by Francesco Cirillo in the late 1980s, who found that most people
+        can sustain meaningful attention for about 20–30 minutes before mental drift
+        rises sharply. The method standardizes this natural rhythm into a predictable cycle:
+    </p>
+    <br>
+    <ul>
+        <li>25 minutes of focused work</li>
+        <li>5-minute break</li>
+        <li>Repeat four times</li>
+        <li>Then take a 15–30 minute long break</li>
+    </ul>
+
+    <p>
+        The value of the system is its clarity. You always know what you’re doing
+        and for how long. Work is bounded; breaks are mandatory; recovery is built in.
+        The timer isn’t motivational theater — it’s the structural backbone that defines
+        beginnings, endings, and resets.
+    </p>
+    <br>
+    <p>
+        Pomodoro is not about intensity. It’s about consistency, rhythm, and reducing
+        the decision friction that normally sabotages focus.
+    </p>
+
+    <hr>
+
+    <h2>How the Pomodoro Method Works, and How to Use It:</h2>
+
+    <ol>
+        <li>
+            <strong>Pick a single task.</strong><br>
+            The interval works because it isolates attention.
+            “Do this one thing for 25 minutes” is cognitively different from “be productive.”
+        </li>
+        <br>
+        <li>
+            <strong>Start the timer and do nothing else.</strong><br>
+            No switching, optimizing, or planning. The point is containment, not intensity.
+        </li>
+        <br>
+        <li>
+            <strong>Stop when the bell rings — even mid-flow.</strong><br>
+            This prevents accidental overexertion and protects you from slipping into fatigue.
+        </li>
+        <br>
+        <li>
+            <strong>Break for 5 minutes.</strong><br>
+            Move, decompress, reset. A break isn’t a reward — it clears the working-memory buffer.
+        </li>
+        <br>
+        <li>
+            <strong>After four cycles, take a long break.</strong><br>
+            Emotional tone resets, fatigue drops, and sustained performance becomes possible.
+        </li>
+    </ol>
+
+    <h3>Why This Structure Works:</h3>
+
+    <p>
+        Focus and attention behave like finite cognitive resources — they decay with
+        micro-distractions, novelty impulses, and constant internal negotiation about
+        when to start or stop. The Pomodoro structure works because it removes that
+        negotiation and cycles your cognitive system through:
+    </p>
+    <br>
+    <ul>
+        <li>Activation</li>
+        <li>Containment</li>
+        <li>Release</li>
+        <li>Reset</li>
+    </ul>
+
+    <p>
+        The 25-minute window sits near the natural span where working memory stays
+        coherent before fragmentation accelerates. Five-minute breaks clear mental load
+        before it compounds. Long breaks prevent the day from collapsing into slow fatigue.
+        Over time, the rhythm becomes conditioning — like training a muscle that gets
+        stronger with repetition rather than force.
+    </p>
+
+    <h3>Pomodoro Lite:</h3>
+
+    <p>
+        For beginners, people with ADHD, or anyone rebuilding attention capacity,
+        25 minutes can overshoot tolerance. Pomodoro Lite scales the load down to:
+    </p>
+    <br>
+    <ul>
+        <li>10–15 minutes of focus</li>
+        <li>3–5 minutes of break</li>
+        <li>Long break after 6–8 rounds</li>
+    </ul>
+
+    <p>
+        It keeps the same rhythm with a smaller attentional burden, letting the
+        “focus muscle” grow gradually. The goal isn’t to stay in Lite mode forever —
+        it’s to build enough stability and comfort to transition naturally into full
+        Pomodoro intervals.
+    </p>
+
 </div>
+
 {% endblock %}

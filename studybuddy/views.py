@@ -63,7 +63,7 @@ def custom_register(request):
         # ------------------------
 
         # Validation
-        if not username: # Checks if username is empty (after stripping spaces)
+        if not username:  # Checks if username is empty (after stripping spaces)
             messages.error(request, "Username cannot be empty.")
         elif password != password2:
             messages.error(request, "Passwords do not match.")
@@ -84,6 +84,7 @@ def custom_register(request):
             return redirect("studybuddy:note_list")
 
     return render(request, "studybuddy/register.html")
+
 
 def password_reset_request(request):
     """Handle password reset request"""

@@ -246,6 +246,31 @@
             box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
         }
 
+        /* Dark mode - ensure inputs are visible */
+        [data-theme="dark"] input,
+        [data-theme="dark"] textarea,
+        [data-theme="dark"] select {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        [data-theme="dark"] input::placeholder,
+        [data-theme="dark"] textarea::placeholder {
+            color: var(--text-secondary);
+        }
+
+        /* Dark mode - make labels visible */
+        [data-theme="dark"] label {
+            color: var(--text-primary);
+        }
+
+        /* Dark mode - make all form text bright */
+        [data-theme="dark"] form,
+        [data-theme="dark"] form * {
+            color: var(--text-primary);
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .content {

@@ -6,14 +6,12 @@
     <h2>Edit Profile</h2>
     <hr>
 
-    <!-- Display success/error messages -->
     {% if messages %}
         {% for message in messages %}
             <div class="message {{ message.tags }}">{{ message }}</div>
         {% endfor %}
     {% endif %}
 
-    <!-- Update User & Profile Info -->
     <form method="POST">
         {% csrf_token %}
         <h3>Account Information</h3>
@@ -81,7 +79,6 @@
 
     <hr>
 
-    <!-- Password Change -->
     <form method="POST">
         {% csrf_token %}
         <h3>Change Password</h3>
@@ -115,19 +112,21 @@
 </div>
 
 <style>
+/* --- DARK MODE STYLES APPLIED BELOW --- */
+
 .profile-container {
     max-width: 700px;
     margin: 40px auto;
     padding: 30px;
-    background: #fff;
+    background: #3f4156; /* Changed from white to Dark Grey */
     border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-    border: 1px solid #ddd;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    border: none; /* Removed the light border */
 }
 
 .profile-container h2, .profile-container h3 {
     text-align: center;
-    color: #333;
+    color: #fff; /* Changed from #333 to White */
     margin-bottom: 20px;
 }
 
@@ -135,13 +134,29 @@
     margin-bottom: 15px;
 }
 
+.form-group label {
+    color: #e5e5e5; /* Make label text readable */
+    margin-bottom: 5px;
+    display: inline-block;
+}
+
+/* Style the inputs to match dark theme */
 .form-group input,
 .form-group textarea {
     width: 100%;
     padding: 10px;
     border-radius: 6px;
-    border: 1px solid #ccc;
+    border: 1px solid #2d2d39;
     font-size: 14px;
+    background-color: #696d97; /* Darker input background */
+    color: #fff; /* White text inside input */
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #51546e;
+    background-color: #696d97;
 }
 
 .btn-save {
@@ -173,7 +188,7 @@
 }
 
 .form-error {
-    color: #dc3545;
+    color: #ff9999; /* Lightened error red for better visibility on dark */
     font-size: 13px;
     margin-top: 4px;
 }
@@ -187,5 +202,13 @@
 
 .message.success { background-color: #d4edda; color: #155724; }
 .message.error { background-color: #f8d7da; color: #721c24; }
+
+/* Add a simple hr style to make it visible */
+hr {
+    border: 0;
+    height: 1px;
+    background: #51546e;
+    margin: 20px 0;
+}
 </style>
 {% endblock %}

@@ -57,12 +57,20 @@ def custom_register(request):
         password = request.POST.get("password")
         password2 = request.POST.get("password2")
 
+        # --- FIX APPLIED HERE ---
+        # 1. Strip whitespace from the username
+        username = username.strip()
+        # ------------------------
+
         # Validation
-        if password != password2:
+        if not username:  # Checks if username is empty (after stripping spaces)
+            messages.error(request, "Username cannot be empty.")
+        elif password != password2:
             messages.error(request, "Passwords do not match.")
         elif User.objects.filter(username=username).exists():
             messages.error(request, "Username already exists.")
         else:
+            # Create user if all checks pass
             user = User.objects.create_user(username=username, password=password)
             user_profile = user.profile
             user_profile.email_verified = True
@@ -194,6 +202,12 @@ class NoteCreateView(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy("studybuddy:note_list")
 
     def form_valid(self, form):
+        # Trim title and ensure it's not blank or only whitespace
+        title = (form.cleaned_data.get("title") or "").strip()
+        if not title:
+            form.add_error("title", "Title cannot be empty.")
+            return self.form_invalid(form)
+        form.instance.title = title
         form.instance.user = self.request.user
         return super().form_valid(form)
 
@@ -203,6 +217,15 @@ class NoteUpdateView(LoginRequiredMixin, UpdateView):
     fields = ["title", "content"]
     template_name = "studybuddy/note_form.html"
     success_url = reverse_lazy("studybuddy:note_list")
+
+    def form_valid(self, form):
+        # Trim title on update and ensure it's not blank or only whitespace
+        title = (form.cleaned_data.get("title") or "").strip()
+        if not title:
+            form.add_error("title", "Title cannot be empty.")
+            return self.form_invalid(form)
+        form.instance.title = title
+        return super().form_valid(form)
 
 
 class NoteDeleteView(LoginRequiredMixin, DeleteView):
@@ -219,7 +242,8 @@ class NoteDeleteView(LoginRequiredMixin, DeleteView):
 @login_required
 def rooms(request):
     if request.method == "POST":
-        name = request.POST.get("name")
+        # Trim whitespace so names like "   " are rejected
+        name = (request.POST.get("name") or "").strip()
         description = request.POST.get("description")
         if name:
             Room.objects.create(
@@ -227,6 +251,8 @@ def rooms(request):
                 description=description,
                 created_by=request.user,
             )
+        else:
+            messages.error(request, "Room title cannot be empty.")
         return redirect("studybuddy:rooms")
 
     # Only show public rooms in the list
@@ -308,9 +334,11 @@ def room_detail(request, room_id):
     room_messages = room.messages.order_by("timestamp")
 
     if request.method == "POST" and "content" in request.POST:
-        content = request.POST.get("content")
+        content = (request.POST.get("content") or "").strip()
         if content:
             Message.objects.create(room=room, user=request.user, content=content)
+        else:
+            messages.error(request, "Message content cannot be empty.")
         return redirect("studybuddy:room_detail", room_id=room.id)
 
     context = {"room": room, "messages": room_messages}

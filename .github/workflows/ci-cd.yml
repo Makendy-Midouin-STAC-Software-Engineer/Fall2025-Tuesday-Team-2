@@ -102,4 +102,4 @@ jobs:
     # Deploy to the single EB environment
     - name: Deploy to Elastic Beanstalk
       run: |
-        eb deploy cs450-env --region ${{ secrets.AWS_REGION }} }}
+        eb deploy cs450-env --region ${{ secrets.AWS_REGION }}

@@ -11,6 +11,7 @@
         gap: 1rem;
     }
 
+    /* Note Card */
     .note-card {
         background: var(--bg-tertiary);
         padding: 1.5rem;
@@ -26,63 +27,132 @@
         border-color: var(--accent-primary);
     }
 
-    .note-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: var(--text-primary);
+    /* Header grid (matches Rooms layout) */
+    .note-header {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 0.5rem;
         margin-bottom: 0.5rem;
     }
 
-    .note-date {
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-        margin-bottom: 0.75rem;
+    /* Title */
+    .note-title a {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--accent-primary);
+        text-decoration: none;
+    }
+
+    .note-card .note-title a:hover {
+        text-decoration: underline;
+    }
+
+    /* Inline date */
+    .note-date-inline {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.4rem;
+        opacity: 0.8;
+        font-size: 0.8rem;
+        justify-content: flex-start;
     }
 
+    /* Note content */
     .note-content {
+        white-space: normal;    /* allows wrapping */
+        overflow: hidden;
+        line-height: 1.5;
+        font-size: 0.95rem;
         color: var(--text-primary);
-        margin-bottom: 1rem;
-        line-height: 1.6;
     }
 
+    /* Action container */
     .note-actions {
         display: flex;
         gap: 0.75rem;
+        justify-content: flex-end;
     }
 
-    .note-actions a {
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
-        text-decoration: none;
-        font-weight: 600;
-        transition: all 0.3s ease;
+    /* ─────────────── CREATE NOTE BUTTON ─────────────── */
+
+    .create-note-btn {
+        background: var(--success);
+        color: white;
+        padding: 0.75rem 1.25rem;
+        border-radius: 12px;
+        font-weight: 700;
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
+        transition: 0.25s ease;
+        text-decoration: none;
     }
 
-    .edit-link {
-        background: var(--accent-primary);
-        color: white;
+    .create-note-btn i {
+        font-size: 1rem;
     }
 
-    .edit-link:hover {
-        background: var(--accent-hover);
+    .create-note-btn:hover {
+        filter: brightness(1.1);
         transform: translateY(-2px);
     }
 
-    .delete-link {
-        background: var(--danger);
-        color: white;
+    /* ─────────────── EDIT BUTTON (Yellow) ─────────────── */
+
+    .edit-btn {
+        background: rgba(234, 179, 8, 0.18);
+        border: 1px solid rgba(234, 179, 8, 0.35);
+        color: #eab308 !important;
+        padding: 0.45rem 0.8rem;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.85rem;
+
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        transition: 0.2s ease;
     }
 
-    .delete-link:hover {
-        background: #b91c1c;
+    .edit-btn i {
+        color: #eab308 !important;
+    }
+
+    .edit-btn:hover {
+        background: rgba(234, 179, 8, 0.28);
         transform: translateY(-2px);
     }
+
+    /* ─────────────── DELETE BUTTON (Red) ─────────────── */
+
+    .delete-icon {
+        padding: 0.45rem 0.8rem;
+        width: auto;
+        height: auto;
+        background: rgba(239, 68, 68, 0.16);
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        border-radius: 8px;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        cursor: pointer;
+        transition: 0.2s ease;
+    }
+
+    .delete-icon i {
+        color: #ef4444 !important;
+        font-size: 0.85rem;
+    }
+
+    .delete-icon:hover {
+        background: rgba(239, 68, 68, 0.26);
+        transform: scale(1.05);
+    }
+
+    /* ─────────────── EMPTY STATE ─────────────── */
 
     .empty-notes {
         text-align: center;
@@ -99,38 +169,58 @@
         opacity: 0.5;
     }
 
+    /* ─────────────── RESPONSIVE ─────────────── */
+
     @media (max-width: 768px) {
         .notes-header {
             flex-direction: column;
             align-items: flex-start;
         }
+
+        .note-actions {
+            justify-content: flex-start;
+        }
     }
+
 </style>
 
 <div class="notes-header">
     <h1><i class="fas fa-sticky-note"></i> Your Notes</h1>
-    <a href="{% url 'studybuddy:note_add' %}" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Create New Note
+    <a href="{% url 'studybuddy:note_add' %}" class="create-note-btn">
+        <i class="fas fa-plus-circle"></i>
+        Create New Note
     </a>
 </div>
 
 {% for note in notes %}
     <div class="note-card">
-        <div class="note-title">{{ note.title }}</div>
-        <div class="note-date">
-            <i class="fas fa-clock"></i> 
-            <span class="note-timestamp" data-timestamp-iso="{{ note.updated_at|date:'c' }}">
-                {{ note.updated_at|date:"M d, Y H:i" }}
-            </span>
+        <div class="note-header">
+            <div class="note-title">
+                <a href="{% url 'studybuddy:note_detail' note.pk %}">
+                    {{ note.title }}
+                </a>
+            </div>
+
+            <div class="note-date-inline">
+                <i class="fas fa-clock"></i>
+                <span class="note-timestamp"
+                      data-timestamp-iso="{{ note.updated_at|date:'c' }}">
+                    {{ note.updated_at|date:"M d, Y H:i" }}
+                </span>
+            </div>
+
+            <div class="note-actions">
+                <a href="{% url 'studybuddy:note_edit' note.pk %}" class="edit-btn">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+                <a href="{% url 'studybuddy:note_delete' note.pk %}" class="delete-icon">
+                    <i class="fas fa-trash"></i>
+                </a>
+            </div>
         </div>
-        <div class="note-content">{{ note.content|truncatechars:100 }}</div>
-        <div class="note-actions">
-            <a href="{% url 'studybuddy:note_edit' note.pk %}" class="edit-link">
-                <i class="fas fa-edit"></i> Edit
-            </a>
-            <a href="{% url 'studybuddy:note_delete' note.pk %}" class="delete-link">
-                <i class="fas fa-trash"></i> Delete
-            </a>
+
+        <div class="note-content">
+            {{ note.content|truncatewords:100 }}
         </div>
     </div>
 {% empty %}

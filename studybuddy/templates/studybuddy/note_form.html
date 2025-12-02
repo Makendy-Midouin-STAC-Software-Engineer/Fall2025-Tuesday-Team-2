@@ -1,10 +1,142 @@
 {% extends 'studybuddy/base.html' %}
+
+{% block extra_head %}
+<style>
+    .page-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .page-title {
+        margin-bottom: 1.5rem;
+        font-size: 2rem;
+        font-weight: 600;
+    }
+
+    .form-field {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-field label {
+        margin-bottom: 0.4rem;
+        font-weight: 500;
+    }
+
+    textarea {
+        min-height: 300px;
+        resize: vertical;
+    }
+
+    .btn-save {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        background-color: #6040ff;
+        color: white;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+    }
+
+    .footer-links {
+        margin-top: 1.5rem;
+    }
+
+    /* Save button — matches the green create buttons */
+    .btn-save {
+        background: var(--success);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1rem;
+        border: none;
+        cursor: pointer;
+
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        transition: 0.25s ease;
+        text-decoration: none;
+    }
+
+    .btn-save:hover {
+        filter: brightness(1.1);
+        transform: translateY(-2px);
+    }
+
+    /* Back button — blue CTA from home page */
+    .btn-back {
+        background: var(--accent-primary); /* exact same blue */
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1rem;
+        border: none;
+        cursor: pointer;
+
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        text-decoration: none;
+        transition: 0.25s ease;
+    }
+
+    .btn-back:hover {
+        filter: brightness(1.1);
+        transform: translateY(-2px);
+    }
+
+    /* Layout for the button row */
+    .form-actions {
+        margin-top: 1.5rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>{% if object %}Edit Note{% else %}New Note{% endif %}</h2>
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Save</button>
-</form>
-<a href="{% url 'studybuddy:note_list' %}">Back to Notes</a>
+
+<div class="page-container">
+
+    <h2 class="page-title">
+        {% if object %}Edit Note{% else %}New Note{% endif %}
+    </h2>
+
+    <form method="post" class="note-form">
+        {% csrf_token %}
+
+        <div class="form-field">
+            <label for="id_title">Title</label>
+            {{ form.title }}
+        </div>
+
+        <div class="form-field">
+            <label for="id_content">Content (Markdown)</label>
+            {{ form.content }}
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-save">
+                <i class="fas fa-save"></i>
+                Save
+            </button>
+
+            <a href="{% url 'studybuddy:note_list' %}" class="btn-back">
+                <i class="fas fa-arrow-left"></i>
+                Back to Notes
+            </a>
+        </div>
+
+    </form>
+
+</div>
+
 {% endblock %}

@@ -1,0 +1,125 @@
+{% extends 'studybuddy/base.html' %}
+
+{% block extra_head %}
+<style>
+    .page-container {
+        max-width: 1300px;
+        margin: 3rem auto;
+        background: var(--bg-tertiary);
+        padding: 2.5rem 3rem;
+        border-radius: 18px;
+        border: 2px solid var(--border-color);
+        box-shadow: 0 10px 25px var(--shadow);
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        color: var(--text-primary);
+    }
+
+    /* Markdown rendering spacing */
+    .rendered-markdown {
+        padding-left: 1rem; /* Fix bullet indentation */
+        line-height: 1.55;
+        font-size: 1.05rem;
+    }
+
+    .rendered-markdown h1,
+    .rendered-markdown h2,
+    .rendered-markdown h3 {
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .rendered-markdown p {
+        margin-bottom: 1rem;
+    }
+
+    .rendered-markdown code {
+        background-color: #1e1e1e;
+        color: #d4d4d4;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.9rem;
+    }
+
+    /* ---------- Shared Button Base ---------- */
+    .btn-large {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        padding: 0.75rem 1.35rem;
+        border-radius: 12px;
+
+        font-size: 1rem;
+        font-weight: 700;
+
+        text-decoration: none;
+        cursor: pointer;
+        transition: 0.25s ease;
+    }
+
+    /* Blue action button (same as “Go to Rooms” / Cancel) */
+    .btn-blue {
+        background: #4369f1;
+        color: white !important;
+    }
+    .btn-blue:hover {
+        filter: brightness(1.1);
+        transform: translateY(-2px);
+    }
+
+    /* Yellow edit button */
+    .btn-edit {
+        background: rgba(234, 179, 8, 0.18);
+        border: 2px solid rgba(234, 179, 8, 0.35);
+        color: #eab308 !important;
+    }
+    .btn-edit i {
+        color: #eab308 !important;
+    }
+    .btn-edit:hover {
+        background: rgba(234, 179, 8, 0.28);
+        transform: translateY(-2px);
+    }
+
+    /* Button row */
+    .footer-links {
+        margin-top: 2.5rem;
+        display: flex;
+        justify-content: flex-end;   /* move to right */
+        gap: 1rem;
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+
+    <h2 class="page-title">{{ note.title }}</h2>
+
+    <div class="rendered-markdown">
+        {{ html|safe }}
+    </div>
+
+    <div class="footer-links">
+
+        <a href="{% url 'studybuddy:note_edit' note.id %}" class="btn-large btn-edit">
+            <i class="fas fa-edit"></i>
+            Edit
+        </a>
+
+        <a href="{% url 'studybuddy:note_list' %}" class="btn-large btn-blue">
+            <i class="fas fa-arrow-left"></i>
+            Back to Notes
+        </a>
+
+    </div>
+
+</div>
+{% endblock %}

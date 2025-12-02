@@ -1,22 +1,128 @@
 {% extends 'studybuddy/base.html' %}
 {% block title %}Delete Room{% endblock %}
-{% block content %}
-<div style="max-width:500px;margin:50px auto;text-align:center;">
-    <h2>Delete Room</h2>
-    <p style="font-size:18px;">Are you sure you want to delete the room "<strong>{{ room.name }}</strong>"?</p>
-    <p style="color:#dc2626;">This action cannot be undone. All messages in this room will also be deleted.</p>
-    
-    <form method="POST" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit" 
-                style="background-color:#dc2626;color:white;padding:12px 24px;border:none;border-radius:8px;cursor:pointer;font-size:16px;margin-right:10px;">
-            Delete Room
-        </button>
-        <a href="{% url 'studybuddy:room_detail' room.id %}" 
-           style="background-color:#6b7280;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-size:16px;display:inline-block;">
-            Cancel
-        </a>
-    </form>
-</div>
-{% endblock %}
 
+{% block content %}
+
+<style>
+    .delete-container {
+        max-width: 900px;
+        margin: 3rem auto;
+        background: var(--bg-tertiary);
+        padding: 2.5rem 3rem;
+        border-radius: 18px;
+        border: 2px solid var(--border-color);
+        box-shadow: 0 10px 25px var(--shadow);
+        text-align: center;
+    }
+
+    .delete-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 1.25rem;
+        color: var(--text-primary);
+    }
+
+    .delete-text {
+        font-size: 1.15rem;
+        color: var(--text-secondary);
+    }
+
+    .delete-warning {
+        margin-top: 0.75rem;
+        color: #ef4444; /* Tailwind red-500 equivalent */
+        font-weight: 600;
+    }
+
+    /* Shared large button base */
+    .btn-large {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+
+        font-size: 1rem;
+        font-weight: 700;
+
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+
+        transition: 0.25s ease;
+    }
+
+    /* DELETE (red) */
+    .btn-danger {
+        background: rgba(239, 68, 68, 0.18);
+        border: 2px solid rgba(239, 68, 68, 0.45);
+        color: #ef4444 !important;
+    }
+
+    .btn-danger i {
+        color: #ef4444 !important;
+    }
+
+    .btn-danger:hover {
+        background: rgba(239, 68, 68, 0.28);
+        transform: translateY(-2px);
+    }
+
+    /* CANCEL (blue button) */
+    .btn-cancel {
+        background: #4369f1;
+        color: white !important;
+    }
+
+    .btn-cancel i {
+        color: white !important;
+    }
+
+    .btn-cancel:hover {
+        filter: brightness(1.1);
+        transform: translateY(-2px);
+    }
+
+    .delete-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+</style>
+
+<div class="delete-container">
+
+    <h2 class="delete-title">Delete Room</h2>
+
+    <p class="delete-text">
+        Are you sure you want to delete the room "<strong>{{ room.name }}</strong>"?
+    </p>
+
+    <p class="delete-warning">
+        This action cannot be undone. All messages in this room will also be deleted.
+    </p>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="delete-actions">
+
+            <!-- DELETE -->
+            <button type="submit" class="btn-large btn-danger">
+                <i class="fas fa-trash"></i>
+                Delete Room
+            </button>
+
+            <!-- CANCEL -->
+            <a href="{% url 'studybuddy:room_detail' room.id %}" class="btn-large btn-cancel">
+                <i class="fas fa-arrow-left"></i>
+                Cancel
+            </a>
+
+        </div>
+    </form>
+
+</div>
+
+{% endblock %}

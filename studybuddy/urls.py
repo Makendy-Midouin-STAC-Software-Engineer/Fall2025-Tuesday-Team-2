@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from django.contrib import admin
 
 # Required for namespacing
 app_name = "studybuddy"
@@ -24,6 +25,7 @@ urlpatterns = [
     # Notes URLs
     path("notes/", views.NoteListView.as_view(), name="note_list"),
     path("notes/add/", views.NoteCreateView.as_view(), name="note_add"),
+    path("notes/<int:pk>/", views.note_detail, name="note_detail"),
     path("notes/<int:pk>/edit/", views.NoteUpdateView.as_view(), name="note_edit"),
     path("notes/<int:pk>/delete/", views.NoteDeleteView.as_view(), name="note_delete"),
     # Rooms URLs
@@ -40,6 +42,7 @@ urlpatterns = [
     path("room/<int:room_id>/messages/", views.get_messages, name="get_messages"),
     path("room/<int:room_id>/send-message/", views.send_message, name="send_message"),
     path("room/<int:room_id>/presence/", views.room_presence, name="room_presence"),
+    path("rooms/search/", views.search_rooms, name="search_rooms"),
     path(
         "message/<int:message_id>/delete/", views.message_delete, name="message_delete"
     ),
@@ -51,4 +54,5 @@ urlpatterns = [
     # Real-time chat API
     path("room/<int:room_id>/messages/", views.get_messages, name="get_messages"),
     path("room/<int:room_id>/send-message/", views.send_message, name="send_message"),
+    path("admin/", admin.site.urls),
 ]

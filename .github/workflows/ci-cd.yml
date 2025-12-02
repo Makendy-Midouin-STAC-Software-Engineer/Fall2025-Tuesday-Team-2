@@ -93,7 +93,7 @@ jobs:
     # Initialize Elastic Beanstalk application
     - name: Initialize Elastic Beanstalk
       run: |
-        eb init studybuddy --platform "Python 3.11" --region ${{ secrets.AWS_REGION }} --verbose
+        eb init cs450-studybuddy --platform "Python 3.11" --region ${{ secrets.AWS_REGION }} --verbose
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -102,4 +102,4 @@ jobs:
     # Deploy to the single EB environment
     - name: Deploy to Elastic Beanstalk
       run: |
-        eb deploy studybuddy-envi --region ${{ secrets.AWS_REGION }}
+        eb deploy cs450-env --region ${{ secrets.AWS_REGION }}

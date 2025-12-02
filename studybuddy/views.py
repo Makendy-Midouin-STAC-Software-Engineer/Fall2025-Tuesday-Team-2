@@ -56,12 +56,15 @@ def custom_logout(request):
 
 def custom_register(request):
     if request.method == "POST":
-        username = request.POST.get("username")
+        # Get and normalize username
+        username = (request.POST.get("username") or "").strip()
         password = request.POST.get("password")
         password2 = request.POST.get("password2")
 
         # Validation
-        if password != password2:
+        if not username:
+            messages.error(request, "Username cannot be empty.")
+        elif password != password2:
             messages.error(request, "Passwords do not match.")
         elif User.objects.filter(username=username).exists():
             messages.error(request, "Username already exists.")
@@ -196,6 +199,13 @@ class NoteCreateView(LoginRequiredMixin, CreateView):
     template_name = "studybuddy/note_form.html"
 
     def form_valid(self, form):
+        # Trim whitespace from title
+        title = (form.cleaned_data.get("title") or "").strip()
+        if not title:
+            form.add_error("title", "Title cannot be empty.")
+            return self.form_invalid(form)
+
+        form.instance.title = title
         form.instance.user = self.request.user
         return super().form_valid(form)
 
@@ -207,6 +217,16 @@ class NoteUpdateView(LoginRequiredMixin, UpdateView):
     model = Note
     fields = ["title", "content"]
     template_name = "studybuddy/note_form.html"
+
+    def form_valid(self, form):
+        # Trim whitespace from title
+        title = (form.cleaned_data.get("title") or "").strip()
+        if not title:
+            form.add_error("title", "Title cannot be empty.")
+            return self.form_invalid(form)
+
+        form.instance.title = title
+        return super().form_valid(form)
 
     def get_success_url(self):
         return reverse_lazy("studybuddy:note_detail", kwargs={"pk": self.object.pk})

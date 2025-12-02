@@ -16,3 +16,8 @@ db.sqlite3
 # Django collected/static/media (if used)
 staticfiles/
 media/
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
